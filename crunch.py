@@ -7,6 +7,7 @@ import time
 import sys
 import re
 import operator
+import datetime
 
 import data_pb2     #Protocol buffer
 
@@ -60,14 +61,21 @@ start_crunch_time = time.time()
 
 print "Crunching data..."
 
+one_week = 60 * 60 * 24 * 7
+one_month = 60 * 60 * 24 * 30
+
 maps_days = 365
 one_month_ago = time.time() - 60 * 60 * 24 * maps_days
 
-recent_maps = {}
-for buffer in buffers:
-  if buffer.timestamp < one_month_ago:
-    continue
+top_ten = 10
 
+fifty = 40 # Yeah I know
+fifty_weeks_ago = time.time() - one_week * fifty
+
+recent_maps = {}
+past_maps = {}
+
+for buffer in buffers:
   if buffer.debug or buffer.cheats:
     continue
 
@@ -80,17 +88,53 @@ for buffer in buffers:
   if buffer.map_name == "dablogomenu":
     continue
 
-  if not buffer.map_name in recent_maps:
-    recent_maps[buffer.map_name] = 0
+  weeks_ago = int((time.time() - buffer.timestamp)/one_week)
 
-  recent_maps[buffer.map_name] += 1
+  if weeks_ago < fifty:
+    print str(weeks_ago) + " weeks ago"
+    if not buffer.map_name in past_maps:
+      past_maps[buffer.map_name] = {}
+
+      # Make sure we have all past 50 weeks initialized so there are no gaps.
+      for i in range(0, fifty):
+	past_maps[buffer.map_name][i] = 0
+
+    past_maps[buffer.map_name][weeks_ago] += 1
+
+  if buffer.timestamp > one_month_ago:
+    if not buffer.map_name in recent_maps:
+      recent_maps[buffer.map_name] = 0
+
+    recent_maps[buffer.map_name] += 1
 
 sorted_recent_maps = sorted(recent_maps.iteritems(), key=operator.itemgetter(1))
 
-if len(sorted_recent_maps) > 15:
-  sorted_recent_maps = sorted_recent_maps[-15:]
+if len(sorted_recent_maps) > top_ten:
+  sorted_recent_maps = sorted_recent_maps[-top_ten:]
+
+past_maps['Other'] = {}
+for i in range(0, fifty):
+  past_maps['Other'][i] = 0
+
+for map in past_maps:
+  found = False
+
+  for entry in sorted_recent_maps:
+    if entry[0] == map:
+      found = True
+      break
+
+  if not found:
+    for i in range(0, fifty):
+      past_maps['Other'][i] += past_maps[map][i]
+
+    past_maps[map]['ignore'] = 1
+
+del past_maps['Other']['ignore']
 
 start_generate_time = time.time()
+
+print "Generating html..."
 
 f = open(args.html[0] + "/header.html", "r")
 header = f.read()
@@ -114,7 +158,7 @@ for map in sorted_recent_maps:
 maps_list = maps_list[:-2]
 maps_played_list = maps_played_list[:-2]
 
-f.write('<div id="recent_maps" style="width:100%; height:400px;"></div>')
+f.write('<div class="chart" id="recent_maps"></div>')
 f.write("""
 <script>
 $(function () {
@@ -123,7 +167,7 @@ $(function () {
             type: 'column'
         },
         title: {
-            text: 'Popular maps last """ + str(maps_days) + """ days'
+            text: 'Top """ + str(top_ten) + """ most popular maps last """ + str(maps_days) + """ days'
         },
         xAxis: {
             categories: [""" + maps_list + """]
@@ -139,6 +183,72 @@ $(function () {
         }]
     });
 });
+</script>
+""")
+
+past_weeks = range(0, fifty)
+past_weeks.reverse()
+
+weeks = ""
+for i in past_weeks:
+  weeks = weeks + "'" + datetime.datetime.fromtimestamp(time.time() - i * one_week).strftime('%d %b') + "', "
+
+weeks = weeks[:-2]
+
+series = ""
+for map_name in past_maps.keys():
+  if 'ignore' in past_maps[map_name]:
+    continue
+
+  series = series + "{ name: '" + map_name + "', data: ["
+  for n in past_maps[map_name]:
+    series = series + str(past_maps[map_name][fifty-n-1]) + ', '
+
+  series = series[:-2] + ']}, '
+
+series = series[:-2]
+
+f.write('<div class="chart" id="maps_over_time""></div>')
+f.write("""
+<script>
+$(function () {
+        $('#maps_over_time').highcharts({
+            chart: {
+                type: 'area'
+            },
+            title: {
+                text: 'Map Popularity Over Time'
+            },
+            xAxis: {
+                categories: [""" + weeks + """],
+                tickmarkPlacement: 'on',
+                title: {
+                    enabled: false
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'Percent'
+                }
+            },
+            tooltip: {
+                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.0f} plays)<br/>',
+                shared: true
+            },
+            plotOptions: {
+                area: {
+                    stacking: 'percent',
+                    lineColor: '#ffffff',
+                    lineWidth: 1,
+                    marker: {
+                        lineWidth: 1,
+                        lineColor: '#ffffff'
+                    }
+                }
+            },
+            series: [""" + series + """]
+        });
+    });
 </script>
 """)
 
