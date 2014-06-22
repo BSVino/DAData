@@ -41,10 +41,12 @@ maps_days_ago = time.time() - one_day * maps_days
 
 top_ten = 10
 
-fifty = 15 # Yeah I know
+map_popularity_periods = 25
 
 recent_maps = {}
 past_maps = {}
+
+total_seconds = []
 
 while location[0] < len(database):
   read = read + 1
@@ -55,9 +57,18 @@ while location[0] < len(database):
     skipped += 1
     continue
 
-  player_seconds = len(buffer.positions.position) * 10
+  if buffer.timestamp == 0:
+    continue
 
+  days_ago = int((time.time() - buffer.timestamp)/one_day)
   weeks_ago = int((time.time() - buffer.timestamp)/one_week)
+
+  while days_ago >= len(total_seconds):
+    total_seconds.append(-1) # -1 means no data for that day.
+
+  # Do this before the continue's below. We collected data from this day even if nobody showed up.
+  if total_seconds[days_ago] == -1:
+    total_seconds[days_ago] = 0
 
   if buffer.debug or buffer.cheats:
     continue
@@ -71,12 +82,24 @@ while location[0] < len(database):
   if buffer.map_name == "dablogomenu":
     continue
 
-  if weeks_ago < fifty:
+  player_seconds = 0
+
+  if buffer.HasField("thirdperson_active"):
+    if buffer.HasField("da_version") and buffer.da_version >= 3:
+      player_seconds = buffer.thirdperson_active + buffer.thirdperson_inactive
+    else:
+      player_seconds = (buffer.thirdperson_active + buffer.thirdperson_inactive) * 10
+  else:
+    player_seconds = len(buffer.positions.position) * 10
+
+  total_seconds[days_ago] += player_seconds
+
+  if weeks_ago < map_popularity_periods:
     if not buffer.map_name in past_maps:
       past_maps[buffer.map_name] = {}
 
       # Make sure we have all past 50 weeks initialized so there are no gaps.
-      for i in range(0, fifty):
+      for i in range(0, map_popularity_periods):
         past_maps[buffer.map_name][i] = 0
 
     past_maps[buffer.map_name][weeks_ago] += player_seconds
@@ -89,6 +112,8 @@ while location[0] < len(database):
 
 
 print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
+print 
+print "Doing post processing..."
 
 # Sort the list of recent maps by popularity
 sorted_recent_maps = sorted(recent_maps.iteritems(), key=operator.itemgetter(1))
@@ -98,12 +123,12 @@ if len(sorted_recent_maps) > top_ten:
   sorted_recent_maps = sorted_recent_maps[-top_ten:]
 
 past_maps['Other'] = {}
-for i in range(0, fifty):
+for i in range(0, map_popularity_periods):
   past_maps['Other'][i] = 0
 
-total_seconds = []
-for i in range(0, fifty):
-  total_seconds.append(0)
+total_map_seconds = []
+for i in range(0, map_popularity_periods):
+  total_map_seconds.append(0)
 
 for map in past_maps:
   found = False
@@ -114,13 +139,13 @@ for map in past_maps:
       break
 
   if map != 'Other':
-    # total_seconds is used to null out weeks where there is no data to make the graph look nicer
-    for i in range(0, fifty):
-      total_seconds[i] += past_maps[map][i]
+    # total_map_seconds is used to null out weeks where there is no data to make the graph look nicer
+    for i in range(0, map_popularity_periods):
+      total_map_seconds[i] += past_maps[map][i]
 
   # If this map is not in the top 10 most popular maps, move it into the "Other" category
   if not found:
-    for i in range(0, fifty):
+    for i in range(0, map_popularity_periods):
       past_maps['Other'][i] += past_maps[map][i]
 
     past_maps[map]['ignore'] = 1
@@ -142,6 +167,76 @@ f.close()
 f = open(args.output[0] + "/index.html", "w")
 f.write(header)
 
+
+
+## PLAYER MINUTES OVER TIME ##
+data = ""
+for i in range(0, len(total_seconds)):
+  today_index = len(total_seconds) - i - 1
+  today_timestamp = int(time.time() - (len(total_seconds) - i) * one_day) * 1000
+
+  if total_seconds[today_index] == -1:
+    data = data + '\n[' + str(today_timestamp) + ', null], '
+  else:
+    data = data + '\n[' + str(today_timestamp) + ', ' + str(float(total_seconds[today_index])/60/60) + '], '
+
+data = data[:-2]
+
+f.write('<div class="chart" id="player_hours"></div>')
+f.write("""
+<script>
+$(function() {
+
+    // Create the chart
+    $('#player_hours').highcharts('StockChart', {
+
+        rangeSelector : {
+            selected : 1,
+            inputEnabled: $('#player_hours').width() > 480
+        },
+
+        title : {
+            text : 'Player Hours Per Day'
+        },
+
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: ({point.y} player hours)<br/>'
+        },
+
+        plotOptions: {
+          area: { lineWidth: 1 }
+        },
+
+        series : [{
+            name : 'Player Hours',
+            type: 'area',
+            data : [""" + data + """],
+            tooltip: {
+                valueDecimals: 2
+            },
+            fillColor : {
+              linearGradient : {
+                x1: 0,
+                y1: 0,
+                x2: 0,
+                y2: 1
+               },
+               stops : [
+                 [0, Highcharts.getOptions().colors[0]],
+                 [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+               ]
+             },
+         }]
+    });
+
+});
+</script>
+""")
+
+
+
+## TOP 10 POPULAR MAPS ##
+
 maps_list = ""
 maps_played_list = ""
 for map in sorted_recent_maps:
@@ -152,6 +247,7 @@ for map in sorted_recent_maps:
 
 maps_list = maps_list[:-2]
 maps_played_list = maps_played_list[:-2]
+
 
 f.write('<div class="chart" id="recent_maps"></div>')
 f.write("""
@@ -181,7 +277,11 @@ $(function () {
 </script>
 """)
 
-past_weeks = range(0, fifty)
+
+
+## POPULAR MAPS OVER TIME ##
+
+past_weeks = range(0, map_popularity_periods)
 past_weeks.reverse()
 
 weeks = ""
@@ -197,16 +297,16 @@ for map_name in past_maps.keys():
 
   series = series + "{ name: '" + map_name + "', data: ["
   for n in past_maps[map_name]:
-    if total_seconds[n] == 0:
+    if total_map_seconds[map_popularity_periods-n-1] == 0:
       series = series + 'null, '
     else:
-      series = series + str(past_maps[map_name][fifty-n-1]/60) + ', '
+      series = series + str(past_maps[map_name][map_popularity_periods-n-1]/60) + ', '
 
   series = series[:-2] + ']}, '
 
 series = series[:-2]
 
-f.write('<div class="chart" id="maps_over_time""></div>')
+f.write('<div class="chart" id="maps_over_time"></div>')
 f.write("""
 <script>
 $(function () {
@@ -248,6 +348,8 @@ $(function () {
     });
 </script>
 """)
+
+f.write("<div id='lastupdated'>Last updated " + datetime.datetime.fromtimestamp(time.time()).strftime('%d %B %Y') + "</div>\n")
 
 f.write(footer)
 f.close()
