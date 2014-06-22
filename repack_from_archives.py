@@ -9,6 +9,8 @@ import datetime
 
 import dadb
 
+import data_pb2
+
 parser = argparse.ArgumentParser(description="Unpack the archives and re-create the database.")
 
 parser.add_argument('-a', '--archive', nargs=1, metavar='directory', help='The directory containing the archives', required=True)
@@ -25,8 +27,11 @@ for (dirpath, dirnames, filenames) in os.walk(args.archive[0]):
 print "Opening " + (str)(len(f)) + " archives..."
 
 skipped = 0
+duplicates = 0
 
 database = open(args.database[0], 'w')
+
+files = {}
 
 for file in f:
   if not file.endswith(".tgz"):
@@ -49,10 +54,24 @@ for file in f:
     if len(content) == 0:
       continue
 
-    gamedata = dadb.db_store(content, database)
-    if gamedata == None:
+    gamedata = data_pb2.GameData()
+
+    try:
+      gamedata.ParseFromString(content)
+    except:
       skipped += 1
       continue
+
+    if member.name in files:
+      # We've archived a file with this name already. Check to make sure it's not a duplicate
+      if gamedata.timestamp == files[member.name]:
+        # It's a duplicate
+        duplicates += 1
+        continue
+
+    files[member.name] = gamedata.timestamp
+
+    dadb.db_store(content, database)
 
     if gamedata.timestamp < lowest_timestamp:
       lowest_timestamp = gamedata.timestamp
@@ -62,10 +81,14 @@ for file in f:
 
   archive.close()
 
+  print "Skipped " + str(skipped) + " bad files."
+  skipped = 0
+
+  print "Skipped " + str(duplicates) + " duplicates."
+  duplicates = 0
+
   print "Archive date range: [" + datetime.datetime.fromtimestamp(lowest_timestamp).strftime("%c") + "] to [" + datetime.datetime.fromtimestamp(highest_timestamp).strftime("%c") + "]"
 
 end_time = time.time()
-
-print "Skipped " + str(skipped) + " bad files."
 
 print "Finished in " + (str)(end_time - start_time) + " seconds."

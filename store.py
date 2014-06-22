@@ -9,6 +9,8 @@ import datetime
 
 import dadb
 
+import data_pb2
+
 parser = argparse.ArgumentParser(description="Store protobuf data in a database.")
 
 parser.add_argument('-i', '--input', nargs=1, metavar='directory', help='The directory containing .pb files of data', required=True)
@@ -48,10 +50,15 @@ lowest_timestamp = time.time()
 highest_timestamp = 0
 
 for file in pbdata:
-  gamedata = dadb.db_store(file, db_file)
-  if gamedata == None:
+  gamedata = data_pb2.GameData()
+
+  try:
+    gamedata.ParseFromString(file)
+  except:
     skipped += 1
     continue
+
+  dadb.db_store(file, db_file)
 
   if gamedata.timestamp < lowest_timestamp:
     lowest_timestamp = gamedata.timestamp

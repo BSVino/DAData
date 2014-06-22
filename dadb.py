@@ -3,19 +3,9 @@ import struct
 import data_pb2
 
 def db_store(buffer, database):
-  gamedata = data_pb2.GameData()
-
-  try:
-    gamedata.ParseFromString(buffer)
-  except:
-    return None
-
   length = struct.pack('L', len(buffer))
   database.write(length)
   database.write(buffer)
-
-  return gamedata
-
 
 # location is an array with one entry, a silly trick so I can have pass-by-reference
 def db_read_next(database, location):
