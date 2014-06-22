@@ -5,6 +5,7 @@ import argparse
 import os
 import time
 import sys
+import datetime
 
 import dadb
 
@@ -43,9 +44,22 @@ db_file = open(args.database[0], 'a')
 
 skipped = 0
 
+lowest_timestamp = time.time()
+highest_timestamp = 0
+
 for file in pbdata:
-  if not dadb.db_store(file, db_file):
+  gamedata = dadb.db_store(file, db_file)
+  if gamedata == None:
     skipped += 1
+    continue
+
+  if gamedata.timestamp < lowest_timestamp:
+    lowest_timestamp = gamedata.timestamp
+
+  if gamedata.timestamp > highest_timestamp:
+    highest_timestamp = gamedata.timestamp
+
+print "Buffers date range: [" + datetime.datetime.fromtimestamp(lowest_timestamp).strftime("%c") + "] to [" + datetime.datetime.fromtimestamp(highest_timestamp).strftime("%c") + "]"
 
 start_archive_time = time.time()
 

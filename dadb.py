@@ -8,13 +8,13 @@ def db_store(buffer, database):
   try:
     gamedata.ParseFromString(buffer)
   except:
-    return False
+    return None
 
   length = struct.pack('L', len(buffer))
   database.write(length)
   database.write(buffer)
 
-  return True
+  return gamedata
 
 
 # location is an array with one entry, a silly trick so I can have pass-by-reference
