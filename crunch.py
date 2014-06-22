@@ -42,6 +42,7 @@ maps_days_ago = time.time() - one_day * maps_days
 top_ten = 10
 
 map_popularity_periods = 25
+weekday_players_periods = 105
 
 recent_maps = {}
 past_maps = {}
@@ -151,6 +152,27 @@ for map in past_maps:
     past_maps[map]['ignore'] = 1
 
 del past_maps['Other']['ignore']
+
+#Calculate players by day of the week.
+weekly_players = []
+for i in range(0, 7):
+  weekly_players.append(0)
+
+for i in range(0, min(len(total_seconds), weekday_players_periods)):
+  today_timestamp = int(time.time() - i * one_day)
+
+  day = int(datetime.datetime.fromtimestamp(today_timestamp).strftime('%w'))
+
+  if day < 0 or day >= 7:
+    print "Invalid day of the week: " + day
+
+  # It can be -1 if we have no data!
+  if total_seconds[i] > 0:
+    weekly_players[day] += total_seconds[i]
+
+weekly_players_total = 0
+for i in weekly_players:
+  weekly_players_total += i
 
 start_generate_time = time.time()
 
@@ -348,6 +370,46 @@ $(function () {
     });
 </script>
 """)
+
+
+
+## PLAYERS BY WEEKDAY ##
+
+days_week_list = ""
+for day in weekly_players:
+  days_week_list = days_week_list + str(float(day)/weekly_players_total) + ", "
+
+days_week_list = days_week_list[:-2]
+
+f.write('<div class="chart" id="players_by_weekday"></div>')
+f.write("""
+<script>
+$(function () {
+   $('#players_by_weekday').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Number of Players by Day of the Week (Last """ + str(int(weekday_players_periods/7)) + """ Weeks)'
+        },
+        xAxis: {
+            categories: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        },
+        yAxis: {
+            title: {
+                text: 'Percentage of Player Minutes'
+            }
+        },
+        series: [{
+            showInLegend: false,
+            data: [""" + days_week_list + """]
+        }]
+    });
+});
+</script>
+""")
+
+
 
 f.write("<div id='lastupdated'>Last updated " + datetime.datetime.fromtimestamp(time.time()).strftime('%d %B %Y') + "</div>\n")
 
