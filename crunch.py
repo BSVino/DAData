@@ -234,8 +234,7 @@ $(function () {
                     lineColor: '#ffffff',
                     lineWidth: 1,
                     marker: {
-                        lineWidth: 1,
-                        lineColor: '#ffffff'
+                        enabled: false
                     }
                 }
             },
