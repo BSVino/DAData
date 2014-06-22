@@ -32,16 +32,16 @@ read = 0
 skipped = 0
 location = [0]
 
-one_week = 60 * 60 * 24 * 7
-one_month = 60 * 60 * 24 * 30
+one_day = 60 * 60 * 24
+one_week = one_day * 7
+one_month = one_day * 30
 
-maps_days = 365
-maps_days_ago = time.time() - 60 * 60 * 24 * maps_days
+maps_days = 90
+maps_days_ago = time.time() - one_day * maps_days
 
 top_ten = 10
 
-fifty = 40 # Yeah I know
-fifty_weeks_ago = time.time() - one_week * fifty
+fifty = 15 # Yeah I know
 
 recent_maps = {}
 past_maps = {}
@@ -77,7 +77,7 @@ while location[0] < len(database):
 
       # Make sure we have all past 50 weeks initialized so there are no gaps.
       for i in range(0, fifty):
-	past_maps[buffer.map_name][i] = 0
+        past_maps[buffer.map_name][i] = 0
 
     past_maps[buffer.map_name][weeks_ago] += player_seconds
 
@@ -101,6 +101,10 @@ past_maps['Other'] = {}
 for i in range(0, fifty):
   past_maps['Other'][i] = 0
 
+total_seconds = []
+for i in range(0, fifty):
+  total_seconds.append(0)
+
 for map in past_maps:
   found = False
 
@@ -108,6 +112,11 @@ for map in past_maps:
     if entry[0] == map:
       found = True
       break
+
+  if map != 'Other':
+    # total_seconds is used to null out weeks where there is no data to make the graph look nicer
+    for i in range(0, fifty):
+      total_seconds[i] += past_maps[map][i]
 
   # If this map is not in the top 10 most popular maps, move it into the "Other" category
   if not found:
@@ -164,7 +173,7 @@ $(function () {
             }
         },
         series: [{
-	    showInLegend: false,
+            showInLegend: false,
             data: [""" + maps_played_list + """]
         }]
     });
@@ -188,7 +197,10 @@ for map_name in past_maps.keys():
 
   series = series + "{ name: '" + map_name + "', data: ["
   for n in past_maps[map_name]:
-    series = series + str(past_maps[map_name][fifty-n-1]/60) + ', '
+    if total_seconds[n] == 0:
+      series = series + 'null, '
+    else:
+      series = series + str(past_maps[map_name][fifty-n-1]/60) + ', '
 
   series = series[:-2] + ']}, '
 
