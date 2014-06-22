@@ -35,7 +35,7 @@ one_week = 60 * 60 * 24 * 7
 one_month = 60 * 60 * 24 * 30
 
 maps_days = 365
-one_month_ago = time.time() - 60 * 60 * 24 * maps_days
+maps_days_ago = time.time() - 60 * 60 * 24 * maps_days
 
 top_ten = 10
 
@@ -65,6 +65,10 @@ while location < len(database):
     skipped = skipped + 1
     continue
 
+  player_seconds = len(buffer.positions.position) * 10
+
+  weeks_ago = int((time.time() - buffer.timestamp)/one_week)
+
   if buffer.debug or buffer.cheats:
     continue
 
@@ -77,10 +81,6 @@ while location < len(database):
   if buffer.map_name == "dablogomenu":
     continue
 
-  player_minutes = len(buffer.positions.position) * 10
-
-  weeks_ago = int((time.time() - buffer.timestamp)/one_week)
-
   if weeks_ago < fifty:
     if not buffer.map_name in past_maps:
       past_maps[buffer.map_name] = {}
@@ -89,13 +89,13 @@ while location < len(database):
       for i in range(0, fifty):
 	past_maps[buffer.map_name][i] = 0
 
-    past_maps[buffer.map_name][weeks_ago] += player_minutes
+    past_maps[buffer.map_name][weeks_ago] += player_seconds
 
-  if buffer.timestamp > one_month_ago:
+  if buffer.timestamp > maps_days_ago:
     if not buffer.map_name in recent_maps:
       recent_maps[buffer.map_name] = 0
 
-    recent_maps[buffer.map_name] += player_minutes
+    recent_maps[buffer.map_name] += player_seconds
 
 
 print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
@@ -195,7 +195,7 @@ for map_name in past_maps.keys():
 
   series = series + "{ name: '" + map_name + "', data: ["
   for n in past_maps[map_name]:
-    series = series + str(past_maps[map_name][fifty-n-1]) + ', '
+    series = series + str(past_maps[map_name][fifty-n-1]/60) + ', '
 
   series = series[:-2] + ']}, '
 
@@ -232,7 +232,7 @@ $(function () {
                 area: {
                     stacking: 'percent',
                     lineColor: '#ffffff',
-                    lineWidth: 1,
+                    lineWidth: 0.3,
                     marker: {
                         enabled: false
                     }
