@@ -21,7 +21,7 @@ args = parser.parse_args()
 
 start_time = time.time()
 
-print "Reading database..."
+print "Crunching database..."
 
 f = open(args.database[0], "rb")
 database = f.read()
@@ -30,36 +30,6 @@ f.close()
 read = 0
 skipped = 0
 location = 0
-
-buffers = []
-
-while location < len(database):
-  read = read + 1
-
-  # First we packed a four byte length of the next buffer
-  length = struct.unpack('L', database[location:location+struct.calcsize('L')])[0]
-
-  # Advance the location four bytes, now location points to the buffer itself
-  location = location + struct.calcsize('L')
-
-  gamedata = data_pb2.GameData()
-
-  # Advance to the next location now in case there's a bad buffer
-  location = location + length
-
-  try:
-    gamedata.ParseFromString(database[location-length:location])
-  except:
-    skipped = skipped + 1
-    continue
-
-  buffers.append(gamedata)
-
-print "Read " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
-
-start_crunch_time = time.time()
-
-print "Crunching data..."
 
 one_week = 60 * 60 * 24 * 7
 one_month = 60 * 60 * 24 * 30
@@ -75,7 +45,26 @@ fifty_weeks_ago = time.time() - one_week * fifty
 recent_maps = {}
 past_maps = {}
 
-for buffer in buffers:
+while location < len(database):
+  read = read + 1
+
+  # First we packed a four byte length of the next buffer
+  length = struct.unpack('L', database[location:location+struct.calcsize('L')])[0]
+
+  # Advance the location four bytes, now location points to the buffer itself
+  location = location + struct.calcsize('L')
+
+  buffer = data_pb2.GameData()
+
+  # Advance to the next location now in case there's a bad buffer
+  location = location + length
+
+  try:
+    buffer.ParseFromString(database[location-length:location])
+  except:
+    skipped = skipped + 1
+    continue
+
   if buffer.debug or buffer.cheats:
     continue
 
@@ -107,6 +96,9 @@ for buffer in buffers:
       recent_maps[buffer.map_name] = 0
 
     recent_maps[buffer.map_name] += player_minutes
+
+
+print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
 
 sorted_recent_maps = sorted(recent_maps.iteritems(), key=operator.itemgetter(1))
 
@@ -259,6 +251,5 @@ f.close()
 end_time = time.time()
 
 print "Finished in " + (str)(end_time - start_time) + " seconds."
-print "Reading: " + (str)(start_crunch_time - start_time) + " seconds."
-print "Crunching: " + (str)(start_generate_time - start_crunch_time) + " seconds."
+print "Crunching: " + (str)(start_generate_time - start_time) + " seconds."
 print "Generating: " + (str)(end_time - start_generate_time) + " seconds."
