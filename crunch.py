@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-import struct
 import argparse
 import os
 import time
@@ -8,6 +7,8 @@ import sys
 import re
 import operator
 import datetime
+
+import dadb
 
 import data_pb2     #Protocol buffer
 
@@ -29,7 +30,7 @@ f.close()
 
 read = 0
 skipped = 0
-location = 0
+location = [0]
 
 one_week = 60 * 60 * 24 * 7
 one_month = 60 * 60 * 24 * 30
@@ -45,24 +46,13 @@ fifty_weeks_ago = time.time() - one_week * fifty
 recent_maps = {}
 past_maps = {}
 
-while location < len(database):
+while location[0] < len(database):
   read = read + 1
 
-  # First we packed a four byte length of the next buffer
-  length = struct.unpack('L', database[location:location+struct.calcsize('L')])[0]
+  buffer = dadb.db_read_next(database, location)
 
-  # Advance the location four bytes, now location points to the buffer itself
-  location = location + struct.calcsize('L')
-
-  buffer = data_pb2.GameData()
-
-  # Advance to the next location now in case there's a bad buffer
-  location = location + length
-
-  try:
-    buffer.ParseFromString(database[location-length:location])
-  except:
-    skipped = skipped + 1
+  if buffer == None:
+    skipped += 1
     continue
 
   player_seconds = len(buffer.positions.position) * 10
@@ -100,8 +90,10 @@ while location < len(database):
 
 print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
 
+# Sort the list of recent maps by popularity
 sorted_recent_maps = sorted(recent_maps.iteritems(), key=operator.itemgetter(1))
 
+# We only want the top ten most played maps, truncate the list if there are more
 if len(sorted_recent_maps) > top_ten:
   sorted_recent_maps = sorted_recent_maps[-top_ten:]
 
@@ -117,6 +109,7 @@ for map in past_maps:
       found = True
       break
 
+  # If this map is not in the top 10 most popular maps, move it into the "Other" category
   if not found:
     for i in range(0, fifty):
       past_maps['Other'][i] += past_maps[map][i]

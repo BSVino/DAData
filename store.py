@@ -5,9 +5,8 @@ import argparse
 import os
 import time
 import sys
-import struct
 
-import data_pb2
+import dadb
 
 parser = argparse.ArgumentParser(description="Store protobuf data in a database.")
 
@@ -40,23 +39,13 @@ start_store_time = time.time()
 
 print "Storing " + (str)(len(pbdata)) + " buffers..."
 
-db_file = open(args.database[0], 'a+')
+db_file = open(args.database[0], 'a')
 
 skipped = 0
 
 for file in pbdata:
-
-  gamedata = data_pb2.GameData()
-
-  try:
-    gamedata.ParseFromString(file)
-  except:
-    skipped = skipped + 1
-    continue
-
-  length = struct.pack('L', len(file))
-  db_file.write(length)
-  db_file.write(file)
+  if not dadb.db_store(file, db_file):
+    skipped += 1
 
 start_archive_time = time.time()
 
