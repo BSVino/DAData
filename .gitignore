@@ -1,5 +1,7 @@
 archive
-data*
+data
+data_extra
+data_pristine
 html
 output
 *.pyc
