@@ -88,10 +88,11 @@ for buffer in buffers:
   if buffer.map_name == "dablogomenu":
     continue
 
+  player_minutes = len(buffer.positions.position) * 10
+
   weeks_ago = int((time.time() - buffer.timestamp)/one_week)
 
   if weeks_ago < fifty:
-    print str(weeks_ago) + " weeks ago"
     if not buffer.map_name in past_maps:
       past_maps[buffer.map_name] = {}
 
@@ -99,13 +100,13 @@ for buffer in buffers:
       for i in range(0, fifty):
 	past_maps[buffer.map_name][i] = 0
 
-    past_maps[buffer.map_name][weeks_ago] += 1
+    past_maps[buffer.map_name][weeks_ago] += player_minutes
 
   if buffer.timestamp > one_month_ago:
     if not buffer.map_name in recent_maps:
       recent_maps[buffer.map_name] = 0
 
-    recent_maps[buffer.map_name] += 1
+    recent_maps[buffer.map_name] += player_minutes
 
 sorted_recent_maps = sorted(recent_maps.iteritems(), key=operator.itemgetter(1))
 
@@ -174,7 +175,7 @@ $(function () {
         },
         yAxis: {
             title: {
-                text: 'Times played'
+                text: 'Player minutes'
             }
         },
         series: [{
@@ -232,7 +233,7 @@ $(function () {
                 }
             },
             tooltip: {
-                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.0f} plays)<br/>',
+                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.0f} player minutes)<br/>',
                 shared: true
             },
             plotOptions: {
