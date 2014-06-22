@@ -28,6 +28,8 @@ print "Opening " + (str)(len(f)) + " archives..."
 
 skipped = 0
 duplicates = 0
+added = 0
+total_added = 0
 
 database = open(args.database[0], 'w')
 
@@ -39,6 +41,7 @@ for file in f:
 
   archive = tarfile.open(args.archive[0] + "/" + file, 'r')
 
+  print
   print "Storing archive " + args.archive[0] + "/" + file + " with " + str(len(archive.getmembers())) + " buffers..."
 
   lowest_timestamp = time.time()
@@ -72,6 +75,8 @@ for file in f:
     files[member.name] = gamedata.timestamp
 
     dadb.db_store(content, database)
+    added += 1
+    total_added += 1
 
     if gamedata.timestamp < lowest_timestamp:
       lowest_timestamp = gamedata.timestamp
@@ -81,13 +86,14 @@ for file in f:
 
   archive.close()
 
-  print "Skipped " + str(skipped) + " bad files."
+  print "Added " + str(added) + " buffers to the archive. Skipped " + str(skipped) + " bad buffers and " + str(duplicates) + " duplicates."
+  duplicates = 0
+  added = 0
   skipped = 0
 
-  print "Skipped " + str(duplicates) + " duplicates."
-  duplicates = 0
-
   print "Archive date range: [" + datetime.datetime.fromtimestamp(lowest_timestamp).strftime("%c") + "] to [" + datetime.datetime.fromtimestamp(highest_timestamp).strftime("%c") + "]"
+
+print "Done. Total buffers in archive: " + str(total_added)
 
 end_time = time.time()
 
