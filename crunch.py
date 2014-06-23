@@ -66,7 +66,8 @@ while location[0] < len(database):
     skipped += 1
     continue
 
-  if buffer.timestamp == 0:
+  # If the timestamp is before July 2013 it must be bad because we didn't collect data before then.
+  if buffer.timestamp < 1372636800: # July 1 2013
     continue
 
   if buffer.timestamp > latest_timestamp:
@@ -217,12 +218,18 @@ f.write(header)
 data = ""
 for i in range(0, len(total_seconds)):
   today_index = len(total_seconds) - i - 1
-  today_timestamp = int(time.time() - (len(total_seconds) - i) * one_day) * 1000
+  today_timestamp = int(time.time() - (len(total_seconds) - i) * one_day)
+
+  # We don't have any data from before July 2013 because that's when the tracking started, so omit whatever's before that, assume it's bad data
+  if today_timestamp < 1372636800: # July 1 2013
+    continue
+
+  today_timestamp_millis = today_timestamp * 1000
 
   if total_seconds[today_index] == -1:
-    data = data + '\n[' + str(today_timestamp) + ', null], '
+    data = data + '[' + str(today_timestamp_millis) + ', null], '
   else:
-    data = data + '\n[' + str(today_timestamp) + ', ' + str(float(total_seconds[today_index])/60/60) + '], '
+    data = data + '[' + str(today_timestamp_millis) + ', ' + str(float(total_seconds[today_index])/60/60) + '], '
 
 data = data[:-2]
 
