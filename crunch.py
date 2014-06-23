@@ -50,6 +50,7 @@ characters_chosen_periods = 90
 weapons_chosen_periods = 90
 skills_chosen_periods = 90
 maps_voted_for_periods = 90
+votekicked_players_periods = 365
 
 latest_timestamp = 0
 
@@ -63,6 +64,7 @@ skill_choices = {}
 skill_choices_recent = {}
 maps_voted_for = {}
 maps_voted_away_from = {}
+players_votekicked = {}
 
 total_seconds = []
 hours_of_the_day = []
@@ -254,6 +256,27 @@ while location[0] < len(database):
 
             maps_voted_away_from[buffer.map_name] += 1
 
+      if days_ago < votekicked_players_periods:
+        if vote.issue == 'kick' and vote.result == True:
+          # Ignore bot kicks
+          if re.match('^.*\(BOT\)$', vote.details) != None:
+            continue
+
+          match = re.match('^(.*) \(Account id: ([0-9]+)\)$', vote.details)
+          player_name = match.groups()[0]
+          player_id = match.groups()[1]
+          if not player_id in players_votekicked:
+            players_votekicked[player_id] = {}
+
+          if not player_name in players_votekicked[player_id]:
+            players_votekicked[player_id][player_name] = 0
+
+          if not 0 in players_votekicked[player_id]:
+            players_votekicked[player_id][0] = 0 # Stands for the total times kicked. Not a string so that players can't name themselves that to mess with this code
+
+          players_votekicked[player_id][player_name] += 1
+          players_votekicked[player_id][0] += 1
+
 print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
 print 
 print "Doing post processing..."
@@ -262,6 +285,8 @@ print "Doing post processing..."
 sorted_recent_maps = sorted(recent_maps.iteritems(), key=operator.itemgetter(1))
 sorted_voted_for_maps = sorted(maps_voted_for.iteritems(), key=operator.itemgetter(1))
 sorted_voted_away_from_maps = sorted(maps_voted_away_from.iteritems(), key=operator.itemgetter(1))
+sorted_votekicked_players = sorted(players_votekicked.iteritems(), key=operator.itemgetter(1)) # This one doesn't actually sort it, it just quickly flattens the dictionary
+sorted_votekicked_players.sort(key=lambda e: e[1][0]) # Now it's sorted.
 
 # We only want the top ten most played maps, truncate the list if there are more
 if len(sorted_recent_maps) > top_ten:
@@ -272,6 +297,14 @@ if len(sorted_voted_for_maps) > top_ten:
 
 if len(sorted_voted_away_from_maps) > top_ten:
   sorted_voted_away_from_maps = sorted_voted_away_from_maps[-top_ten:]
+
+if len(sorted_votekicked_players) > top_ten:
+  sorted_votekicked_players = sorted_votekicked_players[-top_ten:]
+
+sorted_recent_maps.reverse()
+sorted_voted_for_maps.reverse()
+sorted_voted_away_from_maps.reverse()
+sorted_votekicked_players.reverse()
 
 past_maps['Other'] = {}
 for i in range(0, map_popularity_periods):
@@ -1131,6 +1164,57 @@ $(function () {
         yAxis: {
             title: {
                 text: 'Times Chosen'
+            }
+        },
+        series: [{
+            showInLegend: false,
+            data: [""" + data + """]
+        }]
+    });
+});
+</script>
+""")
+
+
+
+## MOST VOTEKICKED PLAYERS ##
+
+data = ""
+categories = ""
+for player in sorted_votekicked_players:
+  data = data + str(player[1][0]) + ", "
+
+  del player[1][0]
+
+  sorted_names = sorted(player[1].iteritems(), key=operator.itemgetter(1), reverse=True)
+
+  clean_name = re.sub(r'\W+', '_', sorted_names[0][0])
+
+  categories = categories + "'" + clean_name + " (ID: " + player[0] + ")', "
+
+categories = categories[:-2]
+data = data[:-2]
+
+f.write('<div class="chart" id="votekicked_players"></div>')
+f.write("""
+<script>
+$(function () {
+   $('#votekicked_players').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Top """ + str(top_ten) + """ Vote-Kicked Players'
+        },
+        subtitle: {
+            text: 'Last """ + str(int(votekicked_players_periods)) + """ Days'
+        },
+        xAxis: {
+            categories: [""" + categories + """]
+        },
+        yAxis: {
+            title: {
+                text: 'Times Vote-Kicked'
             }
         },
         series: [{
