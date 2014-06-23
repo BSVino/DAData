@@ -67,6 +67,7 @@ maps_voted_away_from = {}
 players_votekicked = {}
 
 total_seconds = []
+teamplay_seconds = []
 hours_of_the_day = []
 
 for i in range(0, 24):
@@ -98,6 +99,9 @@ while location[0] < len(database):
   if total_seconds[days_ago] == -1:
     total_seconds[days_ago] = 0
 
+  while days_ago >= len(teamplay_seconds):
+    teamplay_seconds.append(0)
+
   if buffer.debug or buffer.cheats:
     continue
 
@@ -125,6 +129,9 @@ while location[0] < len(database):
     player_seconds = len(buffer.positions.position) * 10
 
   total_seconds[days_ago] += player_seconds
+
+  if buffer.teamplay:
+    teamplay_seconds[days_ago] += player_seconds
 
   if weeks_ago < map_popularity_periods:
     if not buffer.map_name in past_maps:
@@ -822,7 +829,7 @@ if 'eightball' in character_choices:
 if 'bomber' in character_choices:
   bomber_data = build_character_data(character_choices['bomber'])
 
-f.write('<div class="tallchart" id="characters_chosen_history"></div>')
+f.write('<div class="chart" id="characters_chosen_history"></div>')
 f.write("""
 <script>
 $(function() {
@@ -1222,6 +1229,107 @@ $(function () {
             data: [""" + data + """]
         }]
     });
+});
+</script>
+""")
+
+
+
+## TEAMPLAY OVER TIME ##
+
+dm_data = ""
+tdm_data = ""
+for i in range(0, len(total_seconds)):
+  today_index = len(total_seconds) - i - 1
+  today_timestamp = int(time.time() - (len(total_seconds) - i) * one_day)
+
+  # We didn't track teamplay before Epsilon, so don't bother looking at data older
+  if today_timestamp < 1386460800 : # December 8 2013
+    continue
+
+  today_timestamp_millis = today_timestamp * 1000
+
+  if total_seconds[today_index] <= 0:
+    dm_data = dm_data + '[' + str(today_timestamp_millis) + ', null], '
+    tdm_data = tdm_data + '[' + str(today_timestamp_millis) + ', null], '
+  else:
+    dm_data = dm_data + '[' + str(today_timestamp_millis) + ', ' + str(1-float(teamplay_seconds[today_index])/total_seconds[today_index]) + '], '
+    tdm_data = tdm_data + '[' + str(today_timestamp_millis) + ', ' + str(float(teamplay_seconds[today_index])/total_seconds[today_index]) + '], '
+
+dm_data = dm_data[:-2]
+tdm_data = tdm_data[:-2]
+
+f.write('<div class="chart" id="teamplay_history"></div>')
+f.write("""
+<script>
+$(function() {
+
+    // Create the chart
+    $('#teamplay_history').highcharts('StockChart', {
+
+        rangeSelector : {
+            selected : 1,
+            inputEnabled: $('#teamplay_history').width() > 480
+        },
+
+        title : {
+            text : 'Teamplay'
+        },
+
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: ({point.y})<br/>'
+        },
+
+        plotOptions: {
+          area: {
+            stacking: 'percent',
+            lineWidth: 1
+          }
+        },
+
+        series : [{
+            name : 'Deathmatch',
+            color: '#94534a',
+            type: 'area',
+            data : [""" + dm_data + """],
+            tooltip: {
+                valueDecimals: 2
+            },
+            fillColor : {
+              linearGradient : {
+                x1: 0,
+                y1: 0,
+                x2: 0,
+                y2: 1
+               },
+               stops : [
+                 [0, '#94534a'],
+                 [1, '#943629']
+               ]
+             },
+         }, {
+            name : 'Team Deathmatch',
+            color: '#c4cce5',
+            type: 'area',
+            data : [""" + tdm_data + """],
+            tooltip: {
+                valueDecimals: 2
+            },
+            fillColor : {
+              linearGradient : {
+                x1: 0,
+                y1: 0,
+                x2: 0,
+                y2: 1
+               },
+               stops : [
+                 [0, '#c4cce5'],
+                 [1, '#5c71b7']
+               ]
+             },
+         }]
+    });
+
 });
 </script>
 """)
