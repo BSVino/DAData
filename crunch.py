@@ -42,14 +42,16 @@ maps_days_ago = time.time() - one_day * maps_days
 
 top_ten = 10
 
-map_popularity_periods = 25
+map_popularity_periods = 20
 weekday_players_periods = 105
 timeofday_players_periods = 90
+characters_chosen_periods = 90
 
 latest_timestamp = 0
 
 recent_maps = {}
 past_maps = {}
+character_choices = {}
 
 total_seconds = []
 hours_of_the_day = []
@@ -97,8 +99,12 @@ while location[0] < len(database):
 
   player_seconds = 0
 
+  da_version = 0
+  if buffer.HasField("da_version"):
+    da_version = buffer.da_version
+
   if buffer.HasField("thirdperson_active"):
-    if buffer.HasField("da_version") and buffer.da_version >= 3:
+    if da_version >= 3:
       player_seconds = buffer.thirdperson_active + buffer.thirdperson_inactive
     else:
       player_seconds = (buffer.thirdperson_active + buffer.thirdperson_inactive) * 10
@@ -130,6 +136,28 @@ while location[0] < len(database):
     hour = int(single_day / one_hour);
 
     hours_of_the_day[hour] += player_seconds
+
+  # Characters are available in version 1 but they include choices by bots.
+  if da_version > 1:
+    for character in buffer.characters_chosen:
+      # These are the only valid characters, for now.
+      if character != 'wish' and character != 'bomber' and character != 'eightball' and character != 'frank':
+        continue
+
+      # In version 3, bomber wore the eightball skin
+      if da_version == 3 and character == 'bomber':
+        character = 'eightball'
+
+      if days_ago > characters_chosen_periods:
+        continue
+
+      if not character in character_choices:
+        character_choices[character] = []
+
+      while days_ago >= len(character_choices[character]):
+        character_choices[character].append(0)
+
+      character_choices[character][days_ago] += 1
 
 print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
 print 
@@ -197,6 +225,19 @@ hourly_players_total = 0
 for i in hours_of_the_day:
   hourly_players_total += i
 
+if not 'bomber' in character_choices:
+  character_choices['bomber'] = []
+
+longest_character = 0
+
+# Make sure all character choices have the same data time points
+for character in character_choices:
+  longest_character = max(longest_character, len(character_choices[character]))
+
+for character in character_choices:
+  while longest_character >= len(character_choices[character]):
+    character_choices[character].append(0)
+
 start_generate_time = time.time()
 
 print "Generating html..."
@@ -215,6 +256,7 @@ f.write(header)
 
 
 ## PLAYER MINUTES OVER TIME ##
+
 data = ""
 for i in range(0, len(total_seconds)):
   today_index = len(total_seconds) - i - 1
@@ -500,6 +542,194 @@ $(function () {
     });
 </script>
 """)
+
+
+
+## CHARACTERS CHOSEN OVER TIME ##
+
+def build_character_data(character_choices):
+  char_data = ""
+  for i in range(0, len(character_choices)):
+    today_index = len(character_choices) - i - 1
+    today_timestamp = int(time.time() - (len(character_choices) - i) * one_day)
+
+    today_timestamp_millis = today_timestamp * 1000
+
+    if character_choices[today_index] == -1:
+      char_data = char_data + '[' + str(today_timestamp_millis) + ', null], '
+    else:
+      char_data = char_data + '[' + str(today_timestamp_millis) + ', ' + str(float(character_choices[today_index])) + '], '
+
+  char_data = char_data[:-2]
+
+  return char_data
+
+frank_data = ""
+wish_data = ""
+eightball_data = ""
+bomber_data = ""
+
+if 'frank' in character_choices:
+  frank_data = build_character_data(character_choices['frank'])
+
+if 'wish' in character_choices:
+  wish_data = build_character_data(character_choices['wish'])
+
+if 'eightball' in character_choices:
+  eightball_data = build_character_data(character_choices['eightball'])
+
+if 'bomber' in character_choices:
+  bomber_data = build_character_data(character_choices['bomber'])
+
+f.write('<div class="tallchart" id="characters_chosen_history"></div>')
+f.write("""
+<script>
+$(function() {
+
+    // Create the chart
+    $('#characters_chosen_history').highcharts('StockChart', {
+
+        rangeSelector : {
+            selected : 1,
+            inputEnabled: $('#characters_chosen_history').width() > 480
+        },
+
+        title : {
+            text : 'Characters Chosen'
+        },
+
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: (Chosen {point.y} times)<br/>'
+        },
+
+        plotOptions: {
+          area: {
+            stacking: 'percent',
+            lineWidth: 1
+          }
+        },
+
+        series : [{
+            name : 'Vice',
+            color: '#818eb7',
+            type: 'area',
+            data : [""" + wish_data + """],
+            tooltip: {
+                valueDecimals: 2
+            },
+            fillColor : {
+              linearGradient : { x1: 0, y1: 0, x2: 0, y2: 1 },
+               stops : [
+                 [0, '#c4cce5'],
+                 [1, '#5c71b7']
+               ]
+            },
+         }, {
+            name : 'Diesel',
+            color: '#666666',
+            type: 'area',
+            data : [""" + frank_data + """],
+            tooltip: {
+                valueDecimals: 2
+            },
+            fillColor : {
+              linearGradient : { x1: 0, y1: 0, x2: 0, y2: 1 },
+               stops : [
+                 [0, '#202020'],
+                 [1, '#59668f']
+               ]
+            },
+         }, {
+            name : 'Eightball',
+            color: '#94534a',
+            type: 'area',
+            data : [""" + eightball_data + """],
+            tooltip: {
+                valueDecimals: 2
+            },
+            fillColor : {
+              linearGradient : { x1: 0, y1: 0, x2: 0, y2: 1 },
+               stops : [
+                 [0, '#94534a'],
+                 [1, '#943629']
+               ]
+            },
+         }, {
+            name : 'Bomber',
+            color: '#634816',
+            type: 'area',
+            data : [""" + bomber_data + """],
+            tooltip: {
+                valueDecimals: 2
+            },
+            fillColor : {
+              linearGradient : { x1: 0, y1: 0, x2: 0, y2: 1 },
+               stops : [
+                 [0, '#634816'],
+                 [1, '#947438']
+               ]
+            },
+         }]
+    });
+
+});
+</script>
+""")
+
+
+
+## POPULAR CHARACTERS CHOSEN ##
+
+def get_character_print_name(name):
+  if name == 'wish':
+    return 'Vice'
+  if name == 'frank':
+    return 'Deisel'
+  if name == 'eightball':
+    return 'Eightball'
+  if name == 'bomber':
+    return 'Bomber'
+
+data = ""
+categories = ""
+for character in character_choices:
+  categories = categories + "'" + get_character_print_name(character) + "', "
+  data = data + str(sum(character_choices[character])) + ", "
+
+categories = categories[:-2]
+data = data[:-2]
+
+f.write('<div class="chart" id="characters_chosen"></div>')
+f.write("""
+<script>
+$(function () {
+   $('#characters_chosen').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Total Characters Chosen'
+        },
+        subtitle: {
+            text: 'Last """ + str(int(characters_chosen_periods)) + """ Days'
+        },
+        xAxis: {
+            categories: [""" + categories + """]
+        },
+        yAxis: {
+            title: {
+                text: 'Percentage of Player Minutes'
+            }
+        },
+        series: [{
+            showInLegend: false,
+            data: [""" + data + """]
+        }]
+    });
+});
+</script>
+""")
+
 
 
 

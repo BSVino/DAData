@@ -77,10 +77,13 @@ if gamedata.HasField("disconnections"):
 if gamedata.HasField("unique_players_this_map"):
   print str(gamedata.unique_players_this_map) + " unique players"
 
-if len(gamedata.characters_chosen) and da_version < 1:
-  print "Characters chosen is present but corrupt."
-elif len(gamedata.characters_chosen) and da_version >= 1:
-  print str(len(gamedata.characters_chosen)) + " characters chosen"
+if len(gamedata.characters_chosen):
+  if da_version < 1:
+    print "Characters chosen is present but corrupt."
+  elif da_version == 1:
+    print str(len(gamedata.characters_chosen)) + " characters chosen (may include bots)"
+  else:
+    print str(len(gamedata.characters_chosen)) + " characters chosen"
 
 if len(gamedata.weapons_chosen):
   if da_version <= 1:
