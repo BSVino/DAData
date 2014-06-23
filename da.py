@@ -1,8 +1,8 @@
 def get_da_version_name(da_version):
   if da_version == 0:
-    return "Omega"
+    return "Omega and Delta"
   if da_version == 1:
-    return "Delta and Epsilon"
+    return "Epsilon"
   if da_version == 2:
     return "Zeta"
   if da_version == 3:
