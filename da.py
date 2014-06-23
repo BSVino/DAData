@@ -71,6 +71,50 @@ def get_weapon_print_name(name):
 
   return name
 
+def get_skill_name(skill_id, da_version):
+  if da_version == 0:
+    skills = [
+      'none',
+      'bouncer',
+      'athletic',
+      'resilient',
+      'reflexes',
+      'marksman',
+      'troll'
+    ]
+    return weapons[skill_id]
+  elif da_version <= 3:
+    skills = [
+      'none',
+      'bouncer',
+      'athletic',
+      'reflexes',
+      'marksman',
+      'troll',
+      'super',
+      'none',
+      'resilient',
+   ]
+    return skills[skill_id]
+  else:
+    return 'unknown'
+
+def get_skill_print_name(name):
+  if name == 'bouncer':
+    return 'Bouncer'
+  if name == 'athletic':
+    return 'Athlete'
+  if name == 'reflexes':
+    return 'Reflexes'
+  if name == 'marksman':
+    return 'Marksman'
+  if name == 'troll':
+    return 'Nitrophiliac'
+  if name == 'resilient':
+    return 'Resilient'
+
+  return name
+
 def get_character_print_name(name):
   if name == 'wish':
     return 'Vice'

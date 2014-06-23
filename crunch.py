@@ -48,6 +48,7 @@ weekday_players_periods = 105
 timeofday_players_periods = 90
 characters_chosen_periods = 90
 weapons_chosen_periods = 90
+skills_chosen_periods = 90
 
 latest_timestamp = 0
 
@@ -57,6 +58,8 @@ character_choices = {}
 character_choices_recent = {}
 weapon_choices = {}
 weapon_choices_recent = {}
+skill_choices = {}
+skill_choices_recent = {}
 
 total_seconds = []
 hours_of_the_day = []
@@ -200,6 +203,39 @@ while location[0] < len(database):
 
       weapon_choices[weapon_name][days_ago] += 1
 
+  if da_version >= 1:
+    for skill_name in buffer.skills_chosen_s:
+      if days_ago < skills_chosen_periods:
+        if not skill_name in skill_choices_recent:
+          skill_choices_recent[skill_name] = 0
+
+        skill_choices_recent[skill_name] += 1
+
+      if not skill_name in skill_choices:
+        skill_choices[skill_name] = []
+
+      while days_ago >= len(skill_choices[skill_name]):
+        skill_choices[skill_name].append(0)
+
+      skill_choices[skill_name][days_ago] += 1
+
+    for skill in buffer.skills_chosen:
+      skill_name = da.get_skill_name(skill, da_version)
+
+      if days_ago < skills_chosen_periods:
+        if not skill_name in skill_choices_recent:
+          skill_choices_recent[skill_name] = 0
+
+        skill_choices_recent[skill_name] += 1
+
+      if not skill_name in skill_choices:
+        skill_choices[skill_name] = []
+
+      while days_ago >= len(skill_choices[skill_name]):
+        skill_choices[skill_name].append(0)
+
+      skill_choices[skill_name][days_ago] += 1
+
 print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
 print 
 print "Doing post processing..."
@@ -288,6 +324,16 @@ for weapon in weapon_choices:
 for weapon in weapon_choices:
   while longest_weapon >= len(weapon_choices[weapon]):
     weapon_choices[weapon].append(0)
+
+# And skills
+longest_skill = 0
+
+for skill in skill_choices:
+  longest_skill = max(longest_skill, len(skill_choices[skill]))
+
+for skill in skill_choices:
+  while longest_skill >= len(skill_choices[skill]):
+    skill_choices[skill].append(0)
 
 start_generate_time = time.time()
 
@@ -875,6 +921,112 @@ $(function () {
 </script>
 """)
 
+
+
+## SKILLS CHOSEN OVER TIME ##
+
+data = ""
+
+for skill in skill_choices:
+  data = data + """{
+            name : '""" + da.get_skill_print_name(skill) + """',
+            type: 'area',
+            data : ["""
+
+  for i in range(0, len(skill_choices[skill])):
+    today_index = len(skill_choices[skill]) - i - 1
+    today_timestamp = int(time.time() - (len(skill_choices[skill]) - i) * one_day)
+
+    today_timestamp_millis = today_timestamp * 1000
+
+    data = data + '[' + str(today_timestamp_millis) + ', ' + str(float(skill_choices[skill][today_index])) + '], '
+
+  data = data + """],
+            tooltip: {
+                valueDecimals: 2
+            }
+         }, """
+
+data = data[:-2]
+
+f.write('<div class="tallchart" id="skills_chosen_history"></div>')
+f.write("""
+<script>
+$(function() {
+
+    // Create the chart
+    $('#skills_chosen_history').highcharts('StockChart', {
+
+        rangeSelector : {
+            selected : 1,
+            inputEnabled: $('#skills_chosen_history').width() > 480
+        },
+
+        title : {
+            text : 'Skills Chosen'
+        },
+
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: (Chosen {point.y} times)<br/>'
+        },
+
+        plotOptions: {
+          area: {
+            stacking: 'percent',
+            lineWidth: 1
+          }
+        },
+
+        series : [""" + data + """]
+    });
+
+});
+</script>
+""")
+
+
+
+## POPULAR SKILLS CHOSEN ##
+
+data = ""
+categories = ""
+for skill in skill_choices_recent:
+  categories = categories + "'" + da.get_skill_print_name(skill) + "', "
+  data = data + str(skill_choices_recent[skill]) + ", "
+
+categories = categories[:-2]
+data = data[:-2]
+
+f.write('<div class="chart" id="skills_chosen"></div>')
+f.write("""
+<script>
+$(function () {
+   $('#skills_chosen').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Total Skills Chosen'
+        },
+        subtitle: {
+            text: 'Last """ + str(int(skills_chosen_periods)) + """ Days'
+        },
+        xAxis: {
+            categories: [""" + categories + """]
+        },
+        yAxis: {
+            title: {
+                text: 'Times Chosen'
+            }
+        },
+        series: [{
+            showInLegend: false,
+            data: [""" + data + """]
+        }]
+    });
+});
+</script>
+""")
 
 
 
