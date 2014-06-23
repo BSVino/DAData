@@ -9,6 +9,7 @@ import operator
 import datetime
 
 import dadb
+import da
 
 import data_pb2     #Protocol buffer
 
@@ -46,12 +47,16 @@ map_popularity_periods = 20
 weekday_players_periods = 105
 timeofday_players_periods = 90
 characters_chosen_periods = 90
+weapons_chosen_periods = 90
 
 latest_timestamp = 0
 
 recent_maps = {}
 past_maps = {}
 character_choices = {}
+character_choices_recent = {}
+weapon_choices = {}
+weapon_choices_recent = {}
 
 total_seconds = []
 hours_of_the_day = []
@@ -148,8 +153,11 @@ while location[0] < len(database):
       if da_version == 3 and character == 'bomber':
         character = 'eightball'
 
-      if days_ago > characters_chosen_periods:
-        continue
+      if days_ago < characters_chosen_periods:
+        if not character in character_choices_recent:
+          character_choices_recent[character] = 0
+
+        character_choices_recent[character] += 1
 
       if not character in character_choices:
         character_choices[character] = []
@@ -158,6 +166,39 @@ while location[0] < len(database):
         character_choices[character].append(0)
 
       character_choices[character][days_ago] += 1
+
+  if da_version >= 1:
+    for weapon_name in buffer.weapons_chosen_s:
+      if days_ago < weapons_chosen_periods:
+        if not weapon_name in weapon_choices_recent:
+          weapon_choices_recent[weapon_name] = 0
+
+        weapon_choices_recent[weapon_name] += 1
+
+      if not weapon_name in weapon_choices:
+        weapon_choices[weapon_name] = []
+
+      while days_ago >= len(weapon_choices[weapon_name]):
+        weapon_choices[weapon_name].append(0)
+
+      weapon_choices[weapon_name][days_ago] += 1
+
+    for weapon in buffer.weapons_chosen:
+      weapon_name = da.get_weapon_name(weapon, da_version)
+
+      if days_ago < weapons_chosen_periods:
+        if not weapon_name in weapon_choices_recent:
+          weapon_choices_recent[weapon_name] = 0
+
+        weapon_choices_recent[weapon_name] += 1
+
+      if not weapon_name in weapon_choices:
+        weapon_choices[weapon_name] = []
+
+      while days_ago >= len(weapon_choices[weapon_name]):
+        weapon_choices[weapon_name].append(0)
+
+      weapon_choices[weapon_name][days_ago] += 1
 
 print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
 print 
@@ -237,6 +278,16 @@ for character in character_choices:
 for character in character_choices:
   while longest_character >= len(character_choices[character]):
     character_choices[character].append(0)
+
+# And weapons
+longest_weapon = 0
+
+for weapon in weapon_choices:
+  longest_weapon = max(longest_weapon, len(weapon_choices[weapon]))
+
+for weapon in weapon_choices:
+  while longest_weapon >= len(weapon_choices[weapon]):
+    weapon_choices[weapon].append(0)
 
 start_generate_time = time.time()
 
@@ -555,10 +606,7 @@ def build_character_data(character_choices):
 
     today_timestamp_millis = today_timestamp * 1000
 
-    if character_choices[today_index] == -1:
-      char_data = char_data + '[' + str(today_timestamp_millis) + ', null], '
-    else:
-      char_data = char_data + '[' + str(today_timestamp_millis) + ', ' + str(float(character_choices[today_index])) + '], '
+    char_data = char_data + '[' + str(today_timestamp_millis) + ', ' + str(float(character_choices[today_index])) + '], '
 
   char_data = char_data[:-2]
 
@@ -623,7 +671,7 @@ $(function() {
                  [0, '#c4cce5'],
                  [1, '#5c71b7']
                ]
-            },
+            }
          }, {
             name : 'Diesel',
             color: '#666666',
@@ -638,7 +686,7 @@ $(function() {
                  [0, '#202020'],
                  [1, '#59668f']
                ]
-            },
+            }
          }, {
             name : 'Eightball',
             color: '#94534a',
@@ -653,7 +701,7 @@ $(function() {
                  [0, '#94534a'],
                  [1, '#943629']
                ]
-            },
+            }
          }, {
             name : 'Bomber',
             color: '#634816',
@@ -668,7 +716,7 @@ $(function() {
                  [0, '#634816'],
                  [1, '#947438']
                ]
-            },
+            }
          }]
     });
 
@@ -680,21 +728,11 @@ $(function() {
 
 ## POPULAR CHARACTERS CHOSEN ##
 
-def get_character_print_name(name):
-  if name == 'wish':
-    return 'Vice'
-  if name == 'frank':
-    return 'Deisel'
-  if name == 'eightball':
-    return 'Eightball'
-  if name == 'bomber':
-    return 'Bomber'
-
 data = ""
 categories = ""
-for character in character_choices:
-  categories = categories + "'" + get_character_print_name(character) + "', "
-  data = data + str(sum(character_choices[character])) + ", "
+for character in character_choices_recent:
+  categories = categories + "'" + da.get_character_print_name(character) + "', "
+  data = data + str(character_choices_recent[character]) + ", "
 
 categories = categories[:-2]
 data = data[:-2]
@@ -718,7 +756,114 @@ $(function () {
         },
         yAxis: {
             title: {
-                text: 'Percentage of Player Minutes'
+                text: 'Times Chosen'
+            }
+        },
+        series: [{
+            showInLegend: false,
+            data: [""" + data + """]
+        }]
+    });
+});
+</script>
+""")
+
+
+
+## WEAPONS CHOSEN OVER TIME ##
+
+data = ""
+
+for weapon in weapon_choices:
+  data = data + """{
+            name : '""" + da.get_weapon_print_name(weapon) + """',
+            type: 'area',
+            data : ["""
+
+  for i in range(0, len(weapon_choices[weapon])):
+    today_index = len(weapon_choices[weapon]) - i - 1
+    today_timestamp = int(time.time() - (len(weapon_choices[weapon]) - i) * one_day)
+
+    today_timestamp_millis = today_timestamp * 1000
+
+    data = data + '[' + str(today_timestamp_millis) + ', ' + str(float(weapon_choices[weapon][today_index])) + '], '
+
+  data = data + """],
+            tooltip: {
+                valueDecimals: 2
+            }
+         }, """
+
+data = data[:-2]
+
+f.write('<div class="tallchart" id="weapons_chosen_history"></div>')
+f.write("""
+<script>
+$(function() {
+
+    // Create the chart
+    $('#weapons_chosen_history').highcharts('StockChart', {
+
+        rangeSelector : {
+            selected : 1,
+            inputEnabled: $('#weapons_chosen_history').width() > 480
+        },
+
+        title : {
+            text : 'Weapons Chosen'
+        },
+
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: (Chosen {point.y} times)<br/>'
+        },
+
+        plotOptions: {
+          area: {
+            stacking: 'percent',
+            lineWidth: 1
+          }
+        },
+
+        series : [""" + data + """]
+    });
+
+});
+</script>
+""")
+
+
+
+## POPULAR WEAPONS CHOSEN ##
+
+data = ""
+categories = ""
+for weapon in weapon_choices_recent:
+  categories = categories + "'" + da.get_weapon_print_name(weapon) + "', "
+  data = data + str(weapon_choices_recent[weapon]) + ", "
+
+categories = categories[:-2]
+data = data[:-2]
+
+f.write('<div class="chart" id="weapons_chosen"></div>')
+f.write("""
+<script>
+$(function () {
+   $('#weapons_chosen').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Total Weapons Chosen'
+        },
+        subtitle: {
+            text: 'Last """ + str(int(weapons_chosen_periods)) + """ Days'
+        },
+        xAxis: {
+            categories: [""" + categories + """]
+        },
+        yAxis: {
+            title: {
+                text: 'Times Chosen'
             }
         },
         series: [{
