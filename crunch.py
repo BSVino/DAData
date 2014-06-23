@@ -65,6 +65,7 @@ skill_choices_recent = {}
 maps_voted_for = {}
 maps_voted_away_from = {}
 players_votekicked = {}
+da_versions = {}
 
 total_seconds = []
 teamplay_seconds = []
@@ -132,6 +133,14 @@ while location[0] < len(database):
 
   if buffer.teamplay:
     teamplay_seconds[days_ago] += player_seconds
+
+  if not da_version in da_versions:
+    da_versions[da_version] = []
+
+  while days_ago >= len(da_versions[da_version]):
+    da_versions[da_version].append(0)
+
+  da_versions[da_version][days_ago] += player_seconds
 
   if weeks_ago < map_popularity_periods:
     if not buffer.map_name in past_maps:
@@ -400,6 +409,16 @@ for skill in skill_choices:
 for skill in skill_choices:
   while longest_skill >= len(skill_choices[skill]):
     skill_choices[skill].append(0)
+
+# And versions
+longest_version = 0
+
+for version in da_versions:
+  longest_version = max(longest_version, len(da_versions[version]))
+
+for version in da_versions:
+  while longest_version >= len(da_versions[version]):
+    da_versions[version].append(0)
 
 start_generate_time = time.time()
 
@@ -846,6 +865,10 @@ $(function() {
             text : 'Characters Chosen'
         },
 
+        legend: {
+          enabled: true
+        },
+
         tooltip: {
             pointFormat: '<span style="color:{series.color}">{series.name}</span>: (Chosen {point.y} times)<br/>'
         },
@@ -1013,6 +1036,10 @@ $(function() {
             text : 'Weapons Chosen'
         },
 
+        legend: {
+          enabled: true
+        },
+
         tooltip: {
             pointFormat: '<span style="color:{series.color}">{series.name}</span>: (Chosen {point.y} times)<br/>'
         },
@@ -1118,6 +1145,10 @@ $(function() {
 
         title : {
             text : 'Skills Chosen'
+        },
+
+        legend: {
+          enabled: true
         },
 
         tooltip: {
@@ -1276,6 +1307,10 @@ $(function() {
             text : 'Teamplay'
         },
 
+        legend: {
+          enabled: true
+        },
+
         tooltip: {
             pointFormat: '<span style="color:{series.color}">{series.name}</span>: ({point.y})<br/>'
         },
@@ -1328,6 +1363,73 @@ $(function() {
                ]
              },
          }]
+    });
+
+});
+</script>
+""")
+
+
+
+## VERSION ADOPTION ##
+
+data = ""
+
+for version in da_versions:
+  data = data + """{
+            name : '""" + da.get_da_version_name(version) + """',
+            type: 'area',
+            data : ["""
+
+  for i in range(0, len(da_versions[version])):
+    today_index = len(da_versions[version]) - i - 1
+    today_timestamp = int(time.time() - (len(da_versions[version]) - i) * one_day)
+
+    today_timestamp_millis = today_timestamp * 1000
+
+    data = data + '[' + str(today_timestamp_millis) + ', ' + str(float(da_versions[version][today_index])/60/60) + '], '
+
+  data = data + """],
+            tooltip: {
+                valueDecimals: 2
+            }
+         }, """
+
+data = data[:-2]
+
+f.write('<div class="chart" id="version_adoption"></div>')
+f.write("""
+<script>
+$(function() {
+
+    // Create the chart
+    $('#version_adoption').highcharts('StockChart', {
+
+        rangeSelector : {
+            selected : 1,
+            inputEnabled: $('#version_adoption').width() > 480
+        },
+
+        legend: {
+          enabled: true
+        },
+
+        title : {
+            text : 'Version Adoption'
+        },
+
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: ({point.y} player hours)<br/>'
+        },
+
+        plotOptions: {
+          area: {
+            stacking: 'percent',
+            lineWidth: 1
+          }
+        },
+
+        series : [""" + data + """]
     });
 
 });
