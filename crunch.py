@@ -49,6 +49,7 @@ timeofday_players_periods = 90
 characters_chosen_periods = 90
 weapons_chosen_periods = 90
 skills_chosen_periods = 90
+maps_voted_for_periods = 90
 
 latest_timestamp = 0
 
@@ -60,6 +61,8 @@ weapon_choices = {}
 weapon_choices_recent = {}
 skill_choices = {}
 skill_choices_recent = {}
+maps_voted_for = {}
+maps_voted_away_from = {}
 
 total_seconds = []
 hours_of_the_day = []
@@ -236,16 +239,39 @@ while location[0] < len(database):
 
       skill_choices[skill_name][days_ago] += 1
 
+  if da_version >= 1:
+    for vote in buffer.votes:
+      if days_ago < maps_voted_for_periods:
+        if (vote.issue == 'changelevel' or vote.issue == 'nextlevel') and vote.result == True:
+          if not vote.details in maps_voted_for:
+            maps_voted_for[vote.details] = 0
+
+          maps_voted_for[vote.details] += 1
+
+          if vote.issue == 'changelevel':
+            if not buffer.map_name in maps_voted_away_from:
+              maps_voted_away_from[buffer.map_name] = 0
+
+            maps_voted_away_from[buffer.map_name] += 1
+
 print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
 print 
 print "Doing post processing..."
 
 # Sort the list of recent maps by popularity
 sorted_recent_maps = sorted(recent_maps.iteritems(), key=operator.itemgetter(1))
+sorted_voted_for_maps = sorted(maps_voted_for.iteritems(), key=operator.itemgetter(1))
+sorted_voted_away_from_maps = sorted(maps_voted_away_from.iteritems(), key=operator.itemgetter(1))
 
 # We only want the top ten most played maps, truncate the list if there are more
 if len(sorted_recent_maps) > top_ten:
   sorted_recent_maps = sorted_recent_maps[-top_ten:]
+
+if len(sorted_voted_for_maps) > top_ten:
+  sorted_voted_for_maps = sorted_voted_for_maps[-top_ten:]
+
+if len(sorted_voted_away_from_maps) > top_ten:
+  sorted_voted_away_from_maps = sorted_voted_away_from_maps[-top_ten:]
 
 past_maps['Other'] = {}
 for i in range(0, map_popularity_periods):
@@ -539,6 +565,94 @@ $(function () {
             series: [""" + series + """]
         });
     });
+</script>
+""")
+
+
+
+## POPULAR MAPS VOTED FOR ##
+
+data = ""
+categories = ""
+for map in sorted_voted_for_maps:
+  categories = categories + "'" + map[0] + "', "
+  data = data + str(map[1]) + ", "
+
+categories = categories[:-2]
+data = data[:-2]
+
+f.write('<div class="chart" id="maps_voted_for"></div>')
+f.write("""
+<script>
+$(function () {
+   $('#maps_voted_for').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Top """ + str(top_ten) + """ Successful Map Votes'
+        },
+        subtitle: {
+            text: 'Last """ + str(int(maps_voted_for_periods)) + """ Days'
+        },
+        xAxis: {
+            categories: [""" + categories + """]
+        },
+        yAxis: {
+            title: {
+                text: 'Times Chosen'
+            }
+        },
+        series: [{
+            showInLegend: false,
+            data: [""" + data + """]
+        }]
+    });
+});
+</script>
+""")
+
+
+
+## MAPS VOTED AWAY FROM ##
+
+data = ""
+categories = ""
+for map in sorted_voted_away_from_maps:
+  categories = categories + "'" + map[0] + "', "
+  data = data + str(map[1]) + ", "
+
+categories = categories[:-2]
+data = data[:-2]
+
+f.write('<div class="chart" id="maps_voted_away_from"></div>')
+f.write("""
+<script>
+$(function () {
+   $('#maps_voted_away_from').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Top """ + str(top_ten) + """ Maps Voted Away From'
+        },
+        subtitle: {
+            text: 'Last """ + str(int(maps_voted_for_periods)) + """ Days'
+        },
+        xAxis: {
+            categories: [""" + categories + """]
+        },
+        yAxis: {
+            title: {
+                text: 'Times Voted Away From'
+            }
+        },
+        series: [{
+            showInLegend: false,
+            data: [""" + data + """]
+        }]
+    });
+});
 </script>
 """)
 
