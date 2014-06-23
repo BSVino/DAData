@@ -32,7 +32,8 @@ read = 0
 skipped = 0
 location = [0]
 
-one_day = 60 * 60 * 24
+one_hour = 60 * 60
+one_day = one_hour * 24
 one_week = one_day * 7
 one_month = one_day * 30
 
@@ -43,11 +44,18 @@ top_ten = 10
 
 map_popularity_periods = 25
 weekday_players_periods = 105
+timeofday_players_periods = 90
+
+latest_timestamp = 0
 
 recent_maps = {}
 past_maps = {}
 
 total_seconds = []
+hours_of_the_day = []
+
+for i in range(0, 24):
+  hours_of_the_day.append(0)
 
 while location[0] < len(database):
   read = read + 1
@@ -60,6 +68,9 @@ while location[0] < len(database):
 
   if buffer.timestamp == 0:
     continue
+
+  if buffer.timestamp > latest_timestamp:
+    latest_timestamp = buffer.timestamp
 
   days_ago = int((time.time() - buffer.timestamp)/one_day)
   weeks_ago = int((time.time() - buffer.timestamp)/one_week)
@@ -111,6 +122,13 @@ while location[0] < len(database):
 
     recent_maps[buffer.map_name] += player_seconds
 
+  if buffer.timestamp > time.time() - timeofday_players_periods * one_day:
+    # What hour is it now?
+    day = buffer.timestamp - buffer.timestamp % one_day;
+    single_day = buffer.timestamp - day;
+    hour = int(single_day / one_hour);
+
+    hours_of_the_day[hour] += player_seconds
 
 print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
 print 
@@ -173,6 +191,10 @@ for i in range(0, min(len(total_seconds), weekday_players_periods)):
 weekly_players_total = 0
 for i in weekly_players:
   weekly_players_total += i
+
+hourly_players_total = 0
+for i in hours_of_the_day:
+  hourly_players_total += i
 
 start_generate_time = time.time()
 
@@ -280,7 +302,10 @@ $(function () {
             type: 'column'
         },
         title: {
-            text: 'Top """ + str(top_ten) + """ most popular maps last """ + str(maps_days) + """ days'
+            text: 'Top """ + str(top_ten) + """ Most Popular Maps'
+        },
+        subtitle: {
+            text: 'Last """ + str(maps_days) + """ Days'
         },
         xAxis: {
             categories: [""" + maps_list + """]
@@ -390,7 +415,10 @@ $(function () {
             type: 'column'
         },
         title: {
-            text: 'Number of Players by Day of the Week (Last """ + str(int(weekday_players_periods/7)) + """ Weeks)'
+            text: 'Number of Players by Day of the Week'
+        },
+        subtitle: {
+            text: 'Last """ + str(int(weekday_players_periods/7)) + """ Weeks'
         },
         xAxis: {
             categories: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -411,7 +439,64 @@ $(function () {
 
 
 
-f.write("<div id='lastupdated'>Last updated " + datetime.datetime.fromtimestamp(time.time()).strftime('%d %B %Y') + "</div>\n")
+## PLAYERS BY HOUR ##
+
+hours_day_list = ""
+for hour in hours_of_the_day:
+  hours_day_list = hours_day_list + str(float(hour)/hourly_players_total) + ", "
+
+hours_day_list = hours_day_list[:-2]
+
+hours_day_labels = ""
+
+f.write('<div class="chart" id="players_by_hour"></div>')
+f.write("""
+<script>
+$(function () {
+        $('#players_by_hour').highcharts({
+            chart: {
+                type: 'spline'
+            },
+            title: {
+                text: 'Players by Hour of the Day'
+            },
+            subtitle: {
+                text: 'Last """ + str(timeofday_players_periods) + """ Days'
+            },
+            xAxis: {
+                categories: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'],
+                tickmarkPlacement: 'on',
+                title: {
+                    enabled: false
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'Percentage of Player Minutes'
+                }
+            },
+            plotOptions: {
+                area: {
+                    stacking: 'percent',
+                    lineColor: '#ffffff',
+                    lineWidth: 0.3,
+                    marker: {
+                        enabled: false
+                    }
+                }
+            },
+            series: [{
+              showInLegend: false,
+              data: [""" + hours_day_list + """]
+            }]
+        });
+    });
+</script>
+""")
+
+
+
+f.write("<div id='lastupdated'>Last updated " + datetime.datetime.fromtimestamp(time.time()).strftime('%d %B %Y at %H:%M') + ", latest data " + datetime.datetime.fromtimestamp(latest_timestamp).strftime('%d %B %Y at %H:%M') + "</div>\n")
 
 f.write(footer)
 f.close()
