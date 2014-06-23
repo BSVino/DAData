@@ -518,7 +518,7 @@ for map in sorted_recent_maps:
   if map[1] < 3:
     continue
   maps_list = maps_list + "'" + map[0] + "', "
-  maps_played_list = maps_played_list + str(map[1]) + ", "
+  maps_played_list = maps_played_list + str(float(map[1])/60/60) + ", "
 
 maps_list = maps_list[:-2]
 maps_played_list = maps_played_list[:-2]
@@ -543,7 +543,7 @@ $(function () {
         },
         yAxis: {
             title: {
-                text: 'Player minutes'
+                text: 'Player hours'
             }
         },
         series: [{
@@ -578,7 +578,7 @@ for map_name in past_maps.keys():
     if total_map_seconds[map_popularity_periods-n-1] == 0:
       series = series + 'null, '
     else:
-      series = series + str(past_maps[map_name][map_popularity_periods-n-1]/60) + ', '
+      series = series + str(float(past_maps[map_name][map_popularity_periods-n-1])/60/60) + ', '
 
   series = series[:-2] + ']}, '
 
@@ -608,7 +608,7 @@ $(function () {
                 }
             },
             tooltip: {
-                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.0f} player minutes)<br/>',
+                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.percentage:.1f}%</b> ({point.y:,.1f} player hours)<br/>',
                 shared: true
             },
             plotOptions: {
