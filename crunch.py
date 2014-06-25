@@ -69,6 +69,7 @@ da_versions = {}
 
 total_seconds = []
 teamplay_seconds = []
+thirdperson_seconds = []
 hours_of_the_day = []
 
 for i in range(0, 24):
@@ -103,6 +104,9 @@ while location[0] < len(database):
   while days_ago >= len(teamplay_seconds):
     teamplay_seconds.append(0)
 
+  while days_ago >= len(thirdperson_seconds):
+    thirdperson_seconds.append(0)
+
   if buffer.debug or buffer.cheats:
     continue
 
@@ -124,8 +128,10 @@ while location[0] < len(database):
   if buffer.HasField("thirdperson_active"):
     if da_version >= 3:
       player_seconds = buffer.thirdperson_active + buffer.thirdperson_inactive
+      thirdperson_seconds[days_ago] += buffer.thirdperson_active
     else:
       player_seconds = (buffer.thirdperson_active + buffer.thirdperson_inactive) * 10
+      thirdperson_seconds[days_ago] += buffer.thirdperson_active * 10
   else:
     player_seconds = len(buffer.positions.position) * 10
 
@@ -1362,6 +1368,85 @@ $(function() {
                  [1, '#5c71b7']
                ]
              },
+         }]
+    });
+
+});
+</script>
+""")
+
+
+
+## THIRD PERSON OVER TIME ##
+
+tp_data = ""
+fp_data = ""
+for i in range(0, len(total_seconds)):
+  today_index = len(total_seconds) - i - 1
+  today_timestamp = int(time.time() - (len(total_seconds) - i) * one_day)
+
+  # We didn't track third person before Epsilon, so don't bother looking at data older
+  if today_timestamp < 1386460800 : # December 8 2013
+    continue
+
+  today_timestamp_millis = today_timestamp * 1000
+
+  if total_seconds[today_index] <= 0:
+    tp_data = tp_data + '[' + str(today_timestamp_millis) + ', null], '
+    fp_data = fp_data + '[' + str(today_timestamp_millis) + ', null], '
+  else:
+    tp_data = tp_data + '[' + str(today_timestamp_millis) + ', ' + str(float(thirdperson_seconds[today_index])/total_seconds[today_index]) + '], '
+    fp_data = fp_data + '[' + str(today_timestamp_millis) + ', ' + str(1-float(thirdperson_seconds[today_index])/total_seconds[today_index]) + '], '
+
+tp_data = tp_data[:-2]
+fp_data = fp_data[:-2]
+
+f.write('<div class="chart" id="thirdperson_history"></div>')
+f.write("""
+<script>
+$(function() {
+
+    // Create the chart
+    $('#thirdperson_history').highcharts('StockChart', {
+
+        rangeSelector : {
+            selected : 1,
+            inputEnabled: $('#thirdperson_history').width() > 480
+        },
+
+        title : {
+            text : 'Third Person vs First Person'
+        },
+
+        legend: {
+          enabled: true
+        },
+
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: ({point.y})<br/>'
+        },
+
+        plotOptions: {
+          area: {
+            stacking: 'percent',
+            lineWidth: 1
+          }
+        },
+
+        series : [{
+            name : 'Third Person',
+            type: 'area',
+            data : [""" + tp_data + """],
+            tooltip: {
+                valueDecimals: 2
+            }
+         }, {
+            name : 'First Person',
+            type: 'area',
+            data : [""" + fp_data + """],
+            tooltip: {
+                valueDecimals: 2
+            }
          }]
     });
 
