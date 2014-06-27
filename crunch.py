@@ -1523,6 +1523,75 @@ $(function() {
 
 
 
+## REVENUE IN DOLLARS ##
+
+data = ""
+for i in range(0, len(total_seconds)):
+  today_index = len(total_seconds) - i - 1
+  today_timestamp = int(time.time() - (len(total_seconds) - i) * one_day)
+
+  today_timestamp_millis = today_timestamp * 1000
+
+  # We don't have any data from before July 2013 because that's when the tracking started, so omit whatever's before that, assume it's bad data
+  if today_timestamp < 1372636800: # July 1 2013
+    continue
+
+  data = data + '[' + str(today_timestamp_millis) + ', 0], '
+
+data = data[:-2]
+
+f.write("""<div class="chart" id="revenue_dollars"></div>
+<script>
+$(function() {
+
+    // Create the chart
+    $('#revenue_dollars').highcharts('StockChart', {
+
+        rangeSelector : {
+            selected : 1,
+            inputEnabled: $('#revenue_dollars').width() > 480
+        },
+
+        title : {
+            text : 'Daily Revenue'
+        },
+
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: (${point.y})<br/>'
+        },
+
+        plotOptions: {
+          area: { lineWidth: 1 }
+        },
+
+        series : [{
+            name : 'Revenue',
+            type: 'area',
+            data : [""" + data + """],
+            tooltip: {
+                valueDecimals: 2
+            },
+            fillColor : {
+              linearGradient : {
+                x1: 0,
+                y1: 0,
+                x2: 0,
+                y2: 1
+               },
+               stops : [
+                 [0, Highcharts.getOptions().colors[0]],
+                 [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+               ]
+             },
+         }]
+    });
+
+});
+</script>
+""")
+
+
+
 f.write("<div id='lastupdated'>Last updated " + datetime.datetime.fromtimestamp(time.time()).strftime('%d %B %Y at %H:%M') + ", latest data " + datetime.datetime.fromtimestamp(latest_timestamp).strftime('%d %B %Y at %H:%M') + "</div>\n")
 
 f.write(footer)
