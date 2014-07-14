@@ -1,0 +1,16 @@
+package da.protobuf;
+
+message players_entry
+{
+	optional float daily_style = 1;
+	optional float weekly_style = 2;
+	optional float monthly_style = 3;
+
+	optional int32 account_id = 4;
+	optional string name = 5;
+}
+
+message leaders_entry
+{
+	repeated int32 leaders = 1;
+}
