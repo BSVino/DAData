@@ -66,7 +66,7 @@ bool DumpDatabase(tstring database)
 
 	while ((mdb_cursor_get(cursor, &key, &data, MDB_NEXT)) == 0)
 	{
-		printf("Key: %s\n\n", key.mv_data);
+		printf("Key: %s\n\n", string((char*)key.mv_data, key.mv_size).c_str());
 		pb_leader.ParseFromArray(data.mv_data, data.mv_size);
 		pb_leader.PrintDebugString();
 		puts("\n\n\n");
@@ -353,7 +353,7 @@ int main(int argc, char** args)
 	tstring database;
 
 	int opt;
-	while ((opt = getopt(argc, args, "td:")) >= 0)
+	while ((opt = getopt(argc, args, "d:")) >= 0)
 	{
 		switch (opt)
 		{
@@ -368,7 +368,7 @@ int main(int argc, char** args)
 
 	if (optind >= argc)
 	{
-		printf("Commands: store [file], dump, calc_leaders");
+		printf("Commands: store [file], dump, calc_leaders\n");
 		return 1;
 	}
 
@@ -432,7 +432,7 @@ int main(int argc, char** args)
 
 		puts(output.c_str());
 	}
-#ifdef _DEBUG
+#if defined(_DEBUG)
 	else if (tstring("make_test") == args[optind])
 	{
 		da::protobuf::GameData* pb_gamedata = new da::protobuf::GameData();
@@ -477,10 +477,11 @@ int main(int argc, char** args)
 					auto pb_player = pb_gamedata.mutable_player_list()->Add();
 					pb_player->set_accountid(rand() % 10000000);
 					pb_player->set_style((float)(rand() % 1000 + 1000));
-					pb_player->set_name(sprintf(tstring("Player %d"), pb_player->accountid()));
+					pb_player->set_name("Player " + std::to_string(pb_player->accountid()));
 				}
 
-				StoreDataToDatabase(pb_gamedata, database, tstring());
+				tstring output;
+				StoreDataToDatabase(pb_gamedata, database, output);
 
 				CalculateLeaders(database);
 			}

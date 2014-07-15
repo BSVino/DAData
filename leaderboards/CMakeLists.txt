@@ -19,10 +19,15 @@ endif ()
 include_directories (
 	${PROJECT_SOURCE_DIR}/../common
 	${PROJECT_SOURCE_DIR}/../../ext-deps/protobuf-2.5.0/vsprojects/include
-	${PROJECT_SOURCE_DIR}/../lmdb_win_include
 	${PROJECT_SOURCE_DIR}/../../ext-deps/openldap-2.4.39/libraries/liblmdb
 	${PROJECT_SOURCE_DIR}/../../ext-deps/EASTL/include
 )
+
+if (WIN32)
+	include_directories (
+		${PROJECT_SOURCE_DIR}/../lmdb_win_include
+	)
+endif()
 
 set (LEADERBOARDS_SOURCES
 	leaderboards.cpp
@@ -38,6 +43,8 @@ add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 add_definitions(-DPROTOBUF_USE_EXCEPTIONS=0)
 add_definitions(-DEA_CHAR16_NATIVE=1)
+
+set_directory_properties(PROPERTIES COMPILE_DEFINITIONS_DEBUG _DEBUG)
 
 add_executable (leaderboards ${LEADERBOARDS_SOURCES})
 

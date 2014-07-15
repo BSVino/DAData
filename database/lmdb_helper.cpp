@@ -116,14 +116,14 @@ bool LMDBDatabase::GetRecord(const tstring& key, google::protobuf::Message& data
 	return GetRecord(MakeKey(key), data);
 }
 
-bool LMDBDatabase::GetRecord(MDB_val& db_key, google::protobuf::Message& data)
+bool LMDBDatabase::GetRecord(const MDB_val& db_key, google::protobuf::Message& data)
 {
 	if (!IsValid())
 		return false;
 
 	MDB_val db_data;
 
-	if (mdb_get(m_transaction, m_dbi, &db_key, &db_data) != 0)
+	if (mdb_get(m_transaction, m_dbi, const_cast<MDB_val*>(&db_key), &db_data) != 0)
 		return false;
 
 	data.ParseFromArray(db_data.mv_data, db_data.mv_size);
@@ -141,7 +141,7 @@ bool LMDBDatabase::SetRecord(const tstring& key, const google::protobuf::Message
 	return SetRecord(MakeKey(key), data);
 }
 
-bool LMDBDatabase::SetRecord(MDB_val& db_key, const google::protobuf::Message& data)
+bool LMDBDatabase::SetRecord(const MDB_val& db_key, const google::protobuf::Message& data)
 {
 	if (!IsValid())
 		return false;
@@ -153,7 +153,7 @@ bool LMDBDatabase::SetRecord(MDB_val& db_key, const google::protobuf::Message& d
 	db_data.mv_size = data_serialized.length();
 	db_data.mv_data = (void*)data_serialized.data();
 
-	int result = mdb_put(m_transaction, m_dbi, &db_key, &db_data, 0);
+	int result = mdb_put(m_transaction, m_dbi, const_cast<MDB_val*>(&db_key), &db_data, 0);
 
 	if (result == MDB_MAP_FULL)
 		puts("Put failed because map is full. Increase map size.\n");
