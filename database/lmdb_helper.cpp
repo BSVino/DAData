@@ -19,11 +19,12 @@ LMDBDatabase::LMDBDatabase(const tstring& database)
 		return;
 	}
 
-	/*if (mdb_env_set_mapsize(m_env, 4096 * 1000) != 0)
+	// 500 megabytes and change should be more than I'll ever need.
+	if (mdb_env_set_mapsize(m_env, 4096 * 1024 * 128) != 0)
 	{
 		m_valid = false;
 		return;
-	}*/
+	}
 
 	if (mdb_env_open(m_env, database.c_str(), 0, 0664) != 0)
 	{
