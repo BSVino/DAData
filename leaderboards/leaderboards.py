@@ -79,32 +79,38 @@ def calc_leaders(database, leaderboards, output):
 
 	html += "<div class='leaders'>"
 	html += "<h2>Daily Leaders</h2>"
+	html += "<table><tr><th>Player Name</th><th>Score</th></tr>"
 	for player_id in daily_leaders.leaders:
 		player = players_by_id[player_id]
 		profile_id = 76561197960265728 + player.account_id
 		safe_player_name = cgi.escape( player.name )
 		style = int(player.daily_style)
-		html += "<div class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a> - " + str(style) + " style</div>"
+		html += "<tr><td class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a></td><td>" + str(style) + "</td></tr>"
+	html += "</table>"
 	html += "</div>"
 
 	html += "<div class='leaders'>"
 	html += "<h2>Weekly Leaders</h2>"
+	html += "<table><tr><th>Player Name</th><th>Score</th></tr>"
 	for player_id in weekly_leaders.leaders:
 		player = players_by_id[player_id]
 		profile_id = 76561197960265728 + player.account_id
 		safe_player_name = cgi.escape( player.name )
 		style = int(player.weekly_style)
-		html += "<div class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a> - " + str(style) + " style</div>"
+		html += "<tr><td class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a></td><td>" + str(style) + "</td></tr>"
+	html += "</table>"
 	html += "</div>"
 
 	html += "<div class='leaders'>"
 	html += "<h2>Monthly Leaders</h2>"
+	html += "<table><tr><th>Player Name</th><th>Score</th></tr>"
 	for player_id in monthly_leaders.leaders:
 		player = players_by_id[player_id]
 		profile_id = 76561197960265728 + player.account_id
 		safe_player_name = cgi.escape( player.name )
 		style = int(player.monthly_style)
-		html += "<div class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a> - " + str(style) + " style</div>"
+		html += "<tr><td class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a></td><td>" + str(style) + "</td></tr>"
+	html += "</table>"
 	html += "</div>"
 
 	html += "</div>"
