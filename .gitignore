@@ -1,0 +1,6 @@
+database/*.pb.cc
+database/*.pb.h
+protobuf-cpp/*.pb.cc
+protobuf-cpp/*.pb.h
+*.db
+*.pyc

@@ -1,5 +1,7 @@
 #include <time.h>
 
+#include <google/protobuf/text_format.h>
+
 #include "../protobuf-cpp/data.pb.h"
 #include "../database/database.pb.h"
 
@@ -180,7 +182,7 @@ bool CalculateLeaders(tstring database)
 			monthly_leaders.pop_back();
 		}
 
-		if (!daily_leaders.size() || !weekly_leaders.size() || !monthly_leaders.size())
+		if (!daily_leaders.size() && !weekly_leaders.size() && !monthly_leaders.size())
 			break;
 	}
 
@@ -219,11 +221,12 @@ bool StoreDataToDatabase(da::protobuf::GameData& pb_gamedata, tstring database, 
 			da::protobuf::players_entry pb_players_entry;
 
 			if (!db.GetRecord(account_id, pb_players_entry))
-			{
 				pb_players_entry.set_account_id(account_id);
-				pb_players_entry.set_name(pb_player.name());
-			}
+
 			Assert(account_id == pb_players_entry.account_id());
+
+			// Always use the most recent name.
+			pb_players_entry.set_name(pb_player.name());
 
 			pb_players_entry.set_daily_style(pb_players_entry.daily_style() + pb_player.style());
 			pb_players_entry.set_weekly_style(pb_players_entry.weekly_style() + pb_player.style());
@@ -392,40 +395,93 @@ int main(int argc, char** args)
 	{
 		return ResetStyles(database, true, true, true) ? 0 : 1;
 	}
+	else if (tstring("get_player") == args[optind] && argc > optind+1)
+	{
+		LMDBDatabase db(database);
+
+		if (!db.IsValid())
+		{
+			puts("Invalid database file.");
+			return 1;
+		}
+
+		if (!db.OpenDatabase("players", MDB_INTEGERKEY))
+		{
+			puts("Can't open players database.");
+			return 1;
+		}
+
+		string data;
+		if (!db.GetRecord(atoi(args[optind+1]), data))
+			return 0;
+
+		db.CloseDatabase();
+
+		printf("%s", data.data());
+		return 0;
+	}
+	else if (tstring("get_leaders") == args[optind] && argc > optind+1)
+	{
+		LMDBDatabase db(database);
+
+		if (!db.IsValid())
+		{
+			puts("Invalid database file.");
+			return 1;
+		}
+
+		if (!db.OpenDatabase("leaders", 0))
+		{
+			puts("Can't open leaders database.");
+			return 1;
+		}
+
+		string data;
+		if (!db.GetRecord(args[optind+1], data))
+			return 0;
+
+		db.CloseDatabase();
+
+		printf("%s", data.data());
+		return 0;
+	}
 	else if (tstring("store") == args[optind])
 	{
 		optind += 1;
 
-		string data;
+		vector<char> data;
 
 		if (optind >= argc)
 		{
 #define BUFFER_SIZE 1024
-			char szBuffer[BUFFER_SIZE];
+			puts("Reading data from stdin.");
 
-			for (;;)
+			vector<char> buffer;
+			buffer.resize(1000);
+
+			while (!feof(stdin))
 			{
-				size_t bytes = fread(szBuffer, 1, BUFFER_SIZE, stdin);
-
-				if (bytes < BUFFER_SIZE && feof(stdin))
-					break;
-
-				data.append(szBuffer);
+				size_t bytes = fread(buffer.data(), sizeof(char), buffer.size(), stdin);
+				data.insert(data.end(), buffer.begin(), buffer.begin() + bytes);
 			}
 		}
 		else
 		{
+			printf("Reading data from file: %s\n", args[optind]);
+
 			FILE* fp = fopen(args[optind], "r");
 
 			fseek(fp, 0, SEEK_END);
 			data.resize(ftell(fp) + 1);
 			fseek(fp, 0, SEEK_SET);
-			fread((char*)data.data(), 1, data.size() - 1, fp);
+			fread((char*)data.data(), sizeof(char), data.size() - 1, fp);
 			fclose(fp);
 		}
 
 		da::protobuf::GameData pb_gamedata;
-		pb_gamedata.ParseFromString(data);
+		pb_gamedata.ParseFromArray(data.data(), data.size());
+
+		printf("Adding %d players to the database.\n", pb_gamedata.player_list().size());
 
 		tstring output;
 		StoreDataToDatabase(pb_gamedata, database, output) ? 0 : 1;

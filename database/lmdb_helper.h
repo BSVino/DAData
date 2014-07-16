@@ -32,6 +32,10 @@ public:
 	bool GetRecord(const tstring& key, google::protobuf::Message& data);
 	bool GetRecord(const MDB_val& db_key, google::protobuf::Message& data);
 
+	bool GetRecord(int key, std::string& data);
+	bool GetRecord(const tstring& key, std::string& data);
+	bool GetRecord(const MDB_val& db_key, std::string& data);
+
 	bool SetRecord(int key, const google::protobuf::Message& data);
 	bool SetRecord(const tstring& key, const google::protobuf::Message& data);
 	bool SetRecord(const MDB_val& db_key, const google::protobuf::Message& data);

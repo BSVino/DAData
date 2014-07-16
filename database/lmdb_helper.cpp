@@ -131,6 +131,32 @@ bool LMDBDatabase::GetRecord(const MDB_val& db_key, google::protobuf::Message& d
 	return true;
 }
 
+bool LMDBDatabase::GetRecord(int key, std::string& data)
+{
+	return GetRecord(MakeKey(key), data);
+}
+
+bool LMDBDatabase::GetRecord(const tstring& key, std::string& data)
+{
+	return GetRecord(MakeKey(key), data);
+}
+
+bool LMDBDatabase::GetRecord(const MDB_val& db_key, std::string& data)
+{
+	if (!IsValid())
+		return false;
+
+	MDB_val db_data;
+
+	if (mdb_get(m_transaction, m_dbi, const_cast<MDB_val*>(&db_key), &db_data) != 0)
+		return false;
+
+	data.resize(db_data.mv_size);
+	memcpy((void*)data.data(), db_data.mv_data, db_data.mv_size);
+
+	return true;
+}
+
 bool LMDBDatabase::SetRecord(int key, const google::protobuf::Message& data)
 {
 	return SetRecord(MakeKey(key), data);
