@@ -3,7 +3,7 @@ import os
 import subprocess
 import cgi
 
-sys.path.append(os.path.abspath('../database/'))
+sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/../database/'))
 import database_pb2
 
 def calc_leaders(database, leaderboards, output):
@@ -83,7 +83,8 @@ def calc_leaders(database, leaderboards, output):
 	for player_id in daily_leaders.leaders:
 		player = players_by_id[player_id]
 		profile_id = 76561197960265728 + player.account_id
-		safe_player_name = cgi.escape( player.name )
+		unsafe_player_name = player.name
+		safe_player_name = cgi.escape( unsafe_player_name )
 		style = int(player.daily_style)
 		html += "<tr><td class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a></td><td>" + str(style) + "</td></tr>"
 	html += "</table>"
@@ -95,7 +96,8 @@ def calc_leaders(database, leaderboards, output):
 	for player_id in weekly_leaders.leaders:
 		player = players_by_id[player_id]
 		profile_id = 76561197960265728 + player.account_id
-		safe_player_name = cgi.escape( player.name )
+		unsafe_player_name = player.name
+		safe_player_name = cgi.escape( unsafe_player_name )
 		style = int(player.weekly_style)
 		html += "<tr><td class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a></td><td>" + str(style) + "</td></tr>"
 	html += "</table>"
@@ -107,7 +109,8 @@ def calc_leaders(database, leaderboards, output):
 	for player_id in monthly_leaders.leaders:
 		player = players_by_id[player_id]
 		profile_id = 76561197960265728 + player.account_id
-		safe_player_name = cgi.escape( player.name )
+		unsafe_player_name = player.name
+		safe_player_name = cgi.escape( unsafe_player_name )
 		style = int(player.monthly_style)
 		html += "<tr><td class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a></td><td>" + str(style) + "</td></tr>"
 	html += "</table>"
@@ -116,5 +119,5 @@ def calc_leaders(database, leaderboards, output):
 	html += "</div>"
 
 	fp = open(output, 'w')
-	fp.write(html)
+	fp.write(html.encode('utf8'))
 	fp.close()
