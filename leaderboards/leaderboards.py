@@ -1,6 +1,7 @@
 import sys
 import os
 import subprocess
+import cgi
 
 sys.path.append(os.path.abspath('../database/'))
 import database_pb2
@@ -49,10 +50,6 @@ def calc_leaders(database, leaderboards, output):
 	except:
 		return
 
-	print str(len(daily_leaders.leaders)) + " daily leaders"
-	print str(len(weekly_leaders.leaders)) + " weekly leaders"
-	print str(len(monthly_leaders.leaders)) + " monthly leaders"
-
 	players_by_id = {}
 
 	# Initialize all players to empty lists, just so we have the keys, to avoid repeated lookups of players in multiple lists.
@@ -77,24 +74,41 @@ def calc_leaders(database, leaderboards, output):
 		players_by_id[key] = pb_player
 
 	# Now we have a list of all players. Time to make some HTML.
-	print "DAILY LEADERS"
-	print
 
-	for player in daily_leaders.leaders:
-		print players_by_id[player].name + " - " + str(players_by_id[player].daily_style)
+	html =  "<div id='leaderboard'>"
 
-	print
-	print
-	print "WEEKLY LEADERS"
-	print
+	html += "<div class='leaders'>"
+	html += "<h2>Daily Leaders</h2>"
+	for player_id in daily_leaders.leaders:
+		player = players_by_id[player_id]
+		profile_id = 76561197960265728 + player.account_id
+		safe_player_name = cgi.escape( player.name )
+		style = int(player.daily_style)
+		html += "<div class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a> - " + str(style) + " style</div>"
+	html += "</div>"
 
-	for player in weekly_leaders.leaders:
-		print players_by_id[player].name + " - " + str(players_by_id[player].weekly_style)
+	html += "<div class='leaders'>"
+	html += "<h2>Weekly Leaders</h2>"
+	for player_id in weekly_leaders.leaders:
+		player = players_by_id[player_id]
+		profile_id = 76561197960265728 + player.account_id
+		safe_player_name = cgi.escape( player.name )
+		style = int(player.weekly_style)
+		html += "<div class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a> - " + str(style) + " style</div>"
+	html += "</div>"
 
-	print
-	print
-	print "MONTHLY LEADERS"
-	print
+	html += "<div class='leaders'>"
+	html += "<h2>Monthly Leaders</h2>"
+	for player_id in monthly_leaders.leaders:
+		player = players_by_id[player_id]
+		profile_id = 76561197960265728 + player.account_id
+		safe_player_name = cgi.escape( player.name )
+		style = int(player.monthly_style)
+		html += "<div class='player'><a href='http://steamcommunity.com/profiles/" + str(profile_id) + "'>" + safe_player_name + "</a> - " + str(style) + " style</div>"
+	html += "</div>"
 
-	for player in monthly_leaders.leaders:
-		print players_by_id[player].name + " - " + str(players_by_id[player].monthly_style)
+	html += "</div>"
+
+	fp = open(output, 'w')
+	fp.write(html)
+	fp.close()

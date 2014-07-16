@@ -20,7 +20,7 @@ parser.add_argument('-a', '--archive', nargs=1, metavar='archives_directory', he
 parser.add_argument('-f', '--files', nargs=1, metavar='unarchived_directory', help='The directory containing the un-archived files', required=True)
 parser.add_argument('-d', '--database', nargs=1, metavar='database_directory', help='The directory containing the lmdb database to store the results', required=True)
 parser.add_argument('-l', '--leaderboards', nargs=1, metavar='leaderboards_binary', help='The location of the leaderboards binary', required=True)
-parser.add_argument('-o', '--output', nargs=1, metavar='output_directory', help='The directory to output the result html', required=True)
+parser.add_argument('-o', '--output', nargs=1, metavar='output_file', help='The file to write the result html', required=True)
 
 args = parser.parse_args()
 
