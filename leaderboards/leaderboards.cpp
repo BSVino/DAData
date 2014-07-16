@@ -371,7 +371,7 @@ int main(int argc, char** args)
 
 	if (optind >= argc)
 	{
-		printf("Commands: store [file], dump, calc_leaders\n");
+		printf("Commands: store [file], dump, calc_leaders, reset_daily, reset_weekly, reset_monthly, get_player [account_id], get_leaders [daily|weekly|monthly]\n");
 		return 1;
 	}
 
