@@ -417,7 +417,8 @@ int main(int argc, char** args)
 
 		db.CloseDatabase();
 
-		printf("%s", data.data());
+		// Don't use printf, it will null terminate the output.
+		std::cout.write(data.data(), data.length());
 		return 0;
 	}
 	else if (tstring("get_leaders") == args[optind] && argc > optind+1)
@@ -442,7 +443,8 @@ int main(int argc, char** args)
 
 		db.CloseDatabase();
 
-		printf("%s", data.data());
+		// Don't use printf, it will null terminate the output.
+		std::cout.write(data.data(), data.length());
 		return 0;
 	}
 	else if (tstring("store") == args[optind])
