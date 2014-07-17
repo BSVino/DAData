@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(description="Calculate new leaders and output H
 
 parser.add_argument('-d', '--database', nargs=1, metavar='database_directory', help='The directory containing the lmdb database to store the results', required=True)
 parser.add_argument('-l', '--leaderboards', nargs=1, metavar='leaderboards_binary', help='The location of the leaderboards binary', required=True)
-parser.add_argument('-o', '--output', nargs=1, metavar='output_file', help='The file to write the result html', required=True)
+parser.add_argument('-o', '--output', nargs=1, metavar='output_directory', help='The directory to write the result html files', required=True)
 
 args = parser.parse_args()
 
