@@ -448,7 +448,7 @@ f.write(header)
 data = ""
 for i in range(0, len(total_seconds)):
   today_index = len(total_seconds) - i - 1
-  today_timestamp = int(time.time() - (len(total_seconds) - i) * one_day)
+  today_timestamp = int(start_time - (len(total_seconds) - i) * one_day)
 
   # We don't have any data from before July 2013 because that's when the tracking started, so omit whatever's before that, assume it's bad data
   if today_timestamp < 1372636800: # July 1 2013
@@ -570,7 +570,7 @@ past_weeks.reverse()
 
 weeks = ""
 for i in past_weeks:
-  weeks = weeks + "'" + datetime.datetime.fromtimestamp(time.time() - i * one_week).strftime('%d %b') + "', "
+  weeks = weeks + "'" + datetime.datetime.fromtimestamp(start_time - i * one_week).strftime('%d %b') + "', "
 
 weeks = weeks[:-2]
 
@@ -792,6 +792,7 @@ $(function () {
                 categories: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'],
                 tickmarkPlacement: 'on',
                 title: {
+                    text: 'Hour (UTC)'
                     enabled: false
                 }
             },
@@ -827,7 +828,7 @@ def build_character_data(character_choices):
   char_data = ""
   for i in range(0, len(character_choices)):
     today_index = len(character_choices) - i - 1
-    today_timestamp = int(time.time() - (len(character_choices) - i) * one_day)
+    today_timestamp = int(start_time - (len(character_choices) - i) * one_day)
 
     today_timestamp_millis = today_timestamp * 1000
 
@@ -1011,7 +1012,7 @@ for weapon in weapon_choices:
 
   for i in range(0, len(weapon_choices[weapon])):
     today_index = len(weapon_choices[weapon]) - i - 1
-    today_timestamp = int(time.time() - (len(weapon_choices[weapon]) - i) * one_day)
+    today_timestamp = int(start_time - (len(weapon_choices[weapon]) - i) * one_day)
 
     today_timestamp_millis = today_timestamp * 1000
 
@@ -1122,7 +1123,7 @@ for skill in skill_choices:
 
   for i in range(0, len(skill_choices[skill])):
     today_index = len(skill_choices[skill]) - i - 1
-    today_timestamp = int(time.time() - (len(skill_choices[skill]) - i) * one_day)
+    today_timestamp = int(start_time - (len(skill_choices[skill]) - i) * one_day)
 
     today_timestamp_millis = today_timestamp * 1000
 
@@ -1278,7 +1279,7 @@ dm_data = ""
 tdm_data = ""
 for i in range(0, len(total_seconds)):
   today_index = len(total_seconds) - i - 1
-  today_timestamp = int(time.time() - (len(total_seconds) - i) * one_day)
+  today_timestamp = int(start_time - (len(total_seconds) - i) * one_day)
 
   # We didn't track teamplay before Epsilon, so don't bother looking at data older
   if today_timestamp < 1386460800 : # December 8 2013
@@ -1383,7 +1384,7 @@ tp_data = ""
 fp_data = ""
 for i in range(0, len(total_seconds)):
   today_index = len(total_seconds) - i - 1
-  today_timestamp = int(time.time() - (len(total_seconds) - i) * one_day)
+  today_timestamp = int(start_time - (len(total_seconds) - i) * one_day)
 
   # We didn't track third person before Epsilon, so don't bother looking at data older
   if today_timestamp < 1386460800 : # December 8 2013
@@ -1468,7 +1469,7 @@ for version in da_versions:
 
   for i in range(0, len(da_versions[version])):
     today_index = len(da_versions[version]) - i - 1
-    today_timestamp = int(time.time() - (len(da_versions[version]) - i) * one_day)
+    today_timestamp = int(start_time - (len(da_versions[version]) - i) * one_day)
 
     today_timestamp_millis = today_timestamp * 1000
 
@@ -1528,7 +1529,7 @@ $(function() {
 data = ""
 for i in range(0, len(total_seconds)):
   today_index = len(total_seconds) - i - 1
-  today_timestamp = int(time.time() - (len(total_seconds) - i) * one_day)
+  today_timestamp = int(start_time - (len(total_seconds) - i) * one_day)
 
   today_timestamp_millis = today_timestamp * 1000
 
@@ -1592,7 +1593,7 @@ $(function() {
 
 
 
-f.write("<div id='lastupdated'>Last updated " + datetime.datetime.fromtimestamp(time.time()).strftime('%d %B %Y at %H:%M') + ", latest data " + datetime.datetime.fromtimestamp(latest_timestamp).strftime('%d %B %Y at %H:%M') + "</div>\n")
+f.write("<div id='lastupdated'>Last updated " + datetime.datetime.fromtimestamp(start_time).strftime('%d %B %Y at %H:%M') + ", latest data " + datetime.datetime.fromtimestamp(latest_timestamp).strftime('%d %B %Y at %H:%M') + "</div>\n")
 
 f.write(footer)
 f.close()
