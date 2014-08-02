@@ -135,7 +135,7 @@ def calc_leaders(database, leaderboards, output):
 
 		html += "</div>"
 
-	html += "<a href='http://data.doubleactiongame.com/leaderboard'>See all</a>"
+	html += "<a class='seeall' href='http://data.doubleactiongame.com/leaderboard'>See all</a>"
 	html += "</div>"
 
 	fp = open(output + '/short.html', 'w')
@@ -146,7 +146,7 @@ def calc_leaders(database, leaderboards, output):
 
 	html += "<div class='leaders'>"
 	html += "<h2>Daily Leaders</h2>"
-	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Score</th></tr>\n"
+	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Style</th></tr>\n"
 	html += output_n_rows(daily_leaders, players_by_id, get_daily_style, 10)
 	html += "</table>"
 	html += "<a href='/leaderboard/?daily'>See more...</a>"
@@ -154,7 +154,7 @@ def calc_leaders(database, leaderboards, output):
 
 	html += "<div class='leaders'>"
 	html += "<h2>Weekly Leaders</h2>"
-	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Score</th></tr>\n"
+	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Style</th></tr>\n"
 	html += output_n_rows(weekly_leaders, players_by_id, get_weekly_style, 10)
 	html += "</table>"
 	html += "<a href='/leaderboard/?weekly'>See more...</a>"
@@ -162,10 +162,10 @@ def calc_leaders(database, leaderboards, output):
 
 	html += "<div class='leaders'>"
 	html += "<h2>Monthly Leaders</h2>"
-	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Score</th></tr>\n"
+	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Style</th></tr>\n"
 	html += output_n_rows(monthly_leaders, players_by_id, get_monthly_style, 10)
 	html += "</table>"
-	html += "<a href='/leaderboard/?monthly'>See more...</a>"
+	html += "<a class='seeall' href='/leaderboard/?monthly'>See more...</a>"
 	html += "</div>"
 
 	html += "</div>"
@@ -178,10 +178,10 @@ def calc_leaders(database, leaderboards, output):
 
 	html += "<div class='leaders'>"
 	html += "<h2>Daily Leaders</h2>"
-	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Score</th></tr>\n"
+	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Style</th></tr>\n"
 	html += output_n_rows(daily_leaders, players_by_id, get_daily_style, 100)
 	html += "</table>"
-	html += "<a href='/leaderboard/'>Return</a>"
+	html += "<a class='seeall' href='/leaderboard/'>Return</a>"
 	html += "</div>"
 
 	html += "</div>"
@@ -194,10 +194,10 @@ def calc_leaders(database, leaderboards, output):
 
 	html += "<div class='leaders'>"
 	html += "<h2>Weekly Leaders</h2>"
-	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Score</th></tr>\n"
+	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Style</th></tr>\n"
 	html += output_n_rows(weekly_leaders, players_by_id, get_weekly_style, 100)
 	html += "</table>"
-	html += "<a href='/leaderboard/'>Return</a>"
+	html += "<a class='seeall' href='/leaderboard/'>Return</a>"
 	html += "</div>"
 
 	html += "</div>"
@@ -210,10 +210,10 @@ def calc_leaders(database, leaderboards, output):
 
 	html += "<div class='leaders'>"
 	html += "<h2>Monthly Leaders</h2>"
-	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Score</th></tr>\n"
+	html += "<table><col width='30'><tr><th></th><th>Player Name</th><th>Style</th></tr>\n"
 	html += output_n_rows(monthly_leaders, players_by_id, get_monthly_style, 100)
 	html += "</table>"
-	html += "<a href='/leaderboard/'>Return</a>"
+	html += "<a class='seeall' href='/leaderboard/'>Return</a>"
 	html += "</div>"
 
 	html += "</div>"
