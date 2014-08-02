@@ -7,6 +7,8 @@ def get_da_version_name(da_version):
     return "Zeta"
   if da_version == 3:
     return "Kappa"
+  if da_version == 4:
+    return "Boogaloo"
   return "Unreleased"
 
 def get_weapon_name(weapon_id, da_version):
