@@ -726,8 +726,13 @@ $(function () {
 ## PLAYERS BY WEEKDAY ##
 
 days_week_list = ""
-for day in weekly_players:
-  days_week_list = days_week_list + str(float(day)/weekly_players_total) + ", "
+
+if weekly_players_total > 0:
+  for day in weekly_players:
+    days_week_list = days_week_list + str(float(day)/weekly_players_total) + ", "
+else:
+  for day in weekly_players:
+    days_week_list = days_week_list + "0, "
 
 days_week_list = days_week_list[:-2]
 
@@ -767,8 +772,13 @@ $(function () {
 ## PLAYERS BY HOUR ##
 
 hours_day_list = ""
-for hour in hours_of_the_day:
-  hours_day_list = hours_day_list + str(float(hour)/hourly_players_total) + ", "
+
+if hourly_players_total:
+  for hour in hours_of_the_day:
+    hours_day_list = hours_day_list + str(float(hour)/hourly_players_total) + ", "
+else:
+  for hour in hours_of_the_day:
+    hours_day_list = hours_day_list + "0, "
 
 hours_day_list = hours_day_list[:-2]
 
