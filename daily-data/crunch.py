@@ -26,12 +26,9 @@ start_time = time.time()
 print "Crunching database..."
 
 f = open(args.database[0], "rb")
-database = f.read()
-f.close()
 
 read = 0
 skipped = 0
-location = [0]
 
 one_hour = 60 * 60
 one_day = one_hour * 24
@@ -75,10 +72,10 @@ hours_of_the_day = []
 for i in range(0, 24):
   hours_of_the_day.append(0)
 
-while location[0] < len(database):
+while f.tell() != os.fstat(f.fileno()).st_size:
   read = read + 1
 
-  buffer = dadb.db_read_next(database, location)
+  buffer = dadb.db_read_next_fp(f)
 
   if buffer == None:
     skipped += 1
@@ -299,6 +296,7 @@ while location[0] < len(database):
           players_votekicked[player_id][player_name] += 1
           players_votekicked[player_id][0] += 1
 
+f.close()
 print "Crunched " + str(read) + " buffers. There were " + str(skipped) + " bad buffers."
 print 
 print "Doing post processing..."
