@@ -6,6 +6,8 @@ import cgi
 sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/../database/'))
 import database_pb2
 
+cheaters = [147553962, 119383810]
+
 def get_daily_style(player):
 	return player.daily_style
 
@@ -84,22 +86,24 @@ def calc_leaders(database, leaderboards, output):
 			continue
 
 	# Remove some known cheaters
-	players_by_id[73776981].daily_style = 0
-	players_by_id[73776981].weekly_style = 0
-	players_by_id[73776981].monthly_style = 0
-	players_by_id[59691905].daily_style = 0
-	players_by_id[59691905].weekly_style = 0
-	players_by_id[59691905].monthly_style = 0
+	for x in cheaters:
+		if x in players_by_id:
+			players_by_id[x].daily_style = 0
+			players_by_id[x].weekly_style = 0
+			players_by_id[x].monthly_style = 0
 
 	# Now we have a list of all players. Time to make some HTML.
 
 	html =  "<div id='leaderboard_short'>"
 
 	if len(daily_leaders.leaders) > 0:
+		leader_id = 0
+		while player == None or players_by_id[daily_leaders.leaders[leader_id]].daily_style == 0:
+			leader_id += 1
+
 		html += "<div><strong>Daily Leader:</strong> "
 	
-		player = players_by_id[daily_leaders.leaders[0]]
-
+		player = players_by_id[daily_leaders.leaders[leader_id]]
 		if player.account_id == 0:
 			html += "<em>Error</em>"
 		else:
@@ -112,9 +116,13 @@ def calc_leaders(database, leaderboards, output):
 		html += "</div>"
 
 	if len(weekly_leaders.leaders) > 0:
+		leader_id = 0
+		while player == None or players_by_id[weekly_leaders.leaders[leader_id]].weekly_style == 0:
+			leader_id += 1
+
 		html += "<div><strong>Weekly Leader:</strong> "
 
-		player = players_by_id[weekly_leaders.leaders[0]]
+		player = players_by_id[weekly_leaders.leaders[leader_id]]
 
 		if player.account_id == 0:
 			html += "<em>Error</em>"
@@ -128,9 +136,13 @@ def calc_leaders(database, leaderboards, output):
 		html += "</div>"
 
 	if len(monthly_leaders.leaders) > 0:
+                leader_id = 0
+                while player == None or players_by_id[monthly_leaders.leaders[leader_id]].monthly_style == 0:
+                        leader_id += 1
+
 		html += "<div><strong>Monthly Leader:</strong> "
 
-		player = players_by_id[monthly_leaders.leaders[0]]
+		player = players_by_id[monthly_leaders.leaders[leader_id]]
 
 		if player.account_id == 0:
 			html += "<em>Error</em>"
@@ -235,6 +247,9 @@ def output_n_rows(leaders, players_by_id, stylefunc, n):
 	html = ''
 	for player_id in leaders.leaders:
 		player = players_by_id[player_id]
+
+		if player.account_id in cheaters:
+			continue
 
 		if player.account_id == 0:
 			html += "<tr><td>" + str(rank) + "</td><td class='player'>Error</td><td></td></tr>"
