@@ -136,9 +136,9 @@ def calc_leaders(database, leaderboards, output):
 		html += "</div>"
 
 	if len(monthly_leaders.leaders) > 0:
-                leader_id = 0
-                while player == None or players_by_id[monthly_leaders.leaders[leader_id]].monthly_style == 0:
-                        leader_id += 1
+		leader_id = 0
+		while player == None or players_by_id[monthly_leaders.leaders[leader_id]].monthly_style == 0:
+			leader_id += 1
 
 		html += "<div><strong>Monthly Leader:</strong> "
 
