@@ -83,6 +83,14 @@ def calc_leaders(database, leaderboards, output):
 			print 'Error getting player ' + str(key)
 			continue
 
+	# Remove some known cheaters
+	players_by_id[73776981].daily_style = 0
+	players_by_id[73776981].weekly_style = 0
+	players_by_id[73776981].monthly_style = 0
+	players_by_id[59691905].daily_style = 0
+	players_by_id[59691905].weekly_style = 0
+	players_by_id[59691905].monthly_style = 0
+
 	# Now we have a list of all players. Time to make some HTML.
 
 	html =  "<div id='leaderboard_short'>"
